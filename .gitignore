@@ -1,4 +1,8 @@
+# Carpetas
 .venv
 __pycache__
 LABORATORIES
 SUTS
+
+# Archivos
+*.ipynb
