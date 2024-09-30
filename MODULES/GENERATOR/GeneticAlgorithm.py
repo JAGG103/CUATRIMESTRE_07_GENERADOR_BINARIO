@@ -16,6 +16,7 @@ class GeneticAlgorithm:
     def generate(self, parameters:dict, variables:list, types:list, conditions:dict):
         # parameters.keys() in {'n_population','m_probability', 'generations', 'distance'}
         ivector = [0.03, 0.01, 0.005]
+        ifitness = [1/20, 1/10, 1/2] # [1/8,1/4,1/2]
         bestindividual = None
         solved = False
         generation = 0
@@ -33,13 +34,13 @@ class GeneticAlgorithm:
             if(fitnessvector[indbest] == 1):
                 solved = True
                 break
-            elif(fitnessvector[indbest] >= 1/8 and fitnessvector[indbest]<1/4 and parameters['m_probability']!=ivector[0]):
+            elif(fitnessvector[indbest] >= ifitness[0] and fitnessvector[indbest]<ifitness[1] and parameters['m_probability']!=ivector[0]):
                 parameters['m_probability'] = ivector[0]
                 print("UP")
-            elif(fitnessvector[indbest] >= 1/4 and fitnessvector[indbest]<1/2 and parameters['m_probability'] != ivector[1]):
+            elif(fitnessvector[indbest] >= ifitness[1] and fitnessvector[indbest]<ifitness[2] and parameters['m_probability'] != ivector[1]):
                 parameters['m_probability'] = ivector[1]
                 print("UP")
-            elif(fitnessvector[indbest] >= 1/2 and parameters['m_probability'] != ivector[2]):
+            elif(fitnessvector[indbest] >= ifitness[2] and parameters['m_probability'] != ivector[2]):
                 parameters['m_probability'] = ivector[2]
                 print("UP")
 
@@ -124,7 +125,7 @@ class GeneticAlgorithm:
 
     def get_chrosome_lenght(self, types:list, lenghts:list):
         counter = 0
-        pattern = Types('seq of').seqof
+        pattern = Types().seqof
         for i in range(len(types)):
             indexes = get_indexes(pattern, types[i])
             if(indexes):
@@ -182,7 +183,7 @@ class GeneticAlgorithm:
     # Crear vector de longitudes
     def get_lenghts(self, types:list, variables:list, groupfunc:list)->list:
         equality = Operator('relational').equality_
-        seqof = Types('seq of').seqof
+        seqof = Types().seqof
         lenghts = []
         for i in range(len(types)):
             indexes = get_indexes(seqof, types[i])

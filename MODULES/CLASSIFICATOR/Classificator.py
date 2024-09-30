@@ -1,5 +1,5 @@
 from MODULES.regex_patterns import Universal, Existential, Operator, Blocks, Set, Functions
-from MODULES.regex_functions import replace_pattern, get_indexes
+from MODULES.regex_functions import get_indexes
 
 class Classificator:
     __slots__ = ('testConditions','defConditions','_and_')

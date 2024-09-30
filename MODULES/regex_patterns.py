@@ -1,10 +1,14 @@
 
 
 class Types:
-    __slots__ = ('seqof')
-    def __init__(self, option:str):
-        if(option=='seq of'):
-            self.seqof = r'\bseq\s+of\s+\b'
+    __slots__ = ('seqof','real', 'int', 'nat', 'nat0', 'char')
+    def __init__(self):
+        self.seqof = r'\bseq\s+of\s+\b'
+        self.real = r'\breal\b'
+        self.int = r'\bint\b'
+        self.nat = r'\bnat\b'
+        self.nat0 = r'\bnat0\b'
+        self.char = r'\bchar\b'
 
 
 class Blocks:

@@ -1,112 +1,46 @@
 from MODULES.GENERATOR.auxiliary import Coding
-
+from MODULES.regex_patterns import Types
 from MODULES.regex_functions import get_indexes
 
 class Individual:
-    __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR','fenotype','genotype','types')
+    __slots__ = ('basics','nwords','fenotype','genotype','types')
     def __init__(self, types:list) -> None:    
-        # -4096.00 to 4096.00
-        self.N_WORD_REAL = 32
-        self.N_FRAC_REAL = 19
-        # -4096 to 4096
-        self.N_WORD_INT = 13
-        # 0 to 4096
-        self.N_WORD_NAT = 12
-        # 0 - 127
-        self.N_WORD_CHAR = 7
-
-        self.fenotype = [] # Sin codificar
-        self.genotype = [] # Codificado
+        self.basics = [Types().real, Types().int, Types().nat, Types().nat0, Types().char]
+        self.nwords = [32, 13, 12, 12, 7]
+        self.fenotype = []
+        self.genotype = []
         self.types = types
 
-    def create_offspring(self, genotypeSeq, lenghts):
+    def create_offspring(self, genotypeseq, lenghts):
         coding = Coding()
-        patternSeq = "(seq)\s*(of)\s*"
-        counter = 0
         self.fenotype = []
-        self.genotype = genotypeSeq
-
+        self.genotype = genotypeseq
+        counter = 0
         for i in range(len(self.types)):
             typee = self.types[i]
-            if(typee in {'real'}):
-                auxlenght = self.N_WORD_REAL
-                elementStr = genotypeSeq[counter: counter+auxlenght]
-                element = coding.get_fenotype(elementStr, typee)
-                self.fenotype.append(element)
-                counter += auxlenght
-
-            elif(typee in {'int'}):
-                auxlenght = self.N_WORD_INT
-                elementStr = genotypeSeq[counter: counter+auxlenght]
-                element = coding.get_fenotype(elementStr, typee)
-                self.fenotype.append(element)
-                counter += auxlenght
-
-            elif(typee in {'nat', 'nat0'}):
-                auxlenght = self.N_WORD_NAT
-                elementStr = genotypeSeq[counter: counter+auxlenght]
-                element = coding.get_fenotype(elementStr, typee)
-                self.fenotype.append(element)
-                counter += auxlenght
-
-            elif(typee in {'char'}):
-                auxlenght = self.N_WORD_CHAR
-                elementStr = genotypeSeq[counter: counter+auxlenght]
-                element = coding.get_fenotype(elementStr, typee)
-                self.fenotype.append(element)
-                counter += auxlenght
-
-            else:
-                index = get_indexes(patternSeq, typee)
-                if(index):
-                    typee = typee[index[0][1]:]
-                    sequence = []
-                    if(typee in {'real'}):
-                        auxlenght = self.N_WORD_REAL
-                        for _ in range(lenghts[i]):
-                            elementStr = genotypeSeq[counter: counter+auxlenght]
-                            element = coding.get_fenotype(elementStr, typee)
-                            sequence.append(element)
-                            counter += auxlenght
-                        self.fenotype.append(sequence)
-
-                    elif(typee in {'int'}):
-                        auxlenght = self.N_WORD_INT
-                        for _ in range(lenghts[i]):
-                            elementStr = genotypeSeq[counter: counter+auxlenght]
-                            element = coding.get_fenotype(elementStr, typee)
-                            sequence.append(element)
-                            counter += auxlenght
-                        self.fenotype.append(sequence)
-
-                    elif(typee in {'nat', 'nat0'}):
-                        auxlenght = self.N_WORD_NAT
-                        for _ in range(lenghts[i]):
-                            elementStr = genotypeSeq[counter: counter+auxlenght]
-                            element = coding.get_fenotype(elementStr, typee)
-                            sequence.append(element)
-                            counter += auxlenght
-                        self.fenotype.append(sequence)
-
-                    elif(typee in {'char'}):
-                        auxlenght = self.N_WORD_CHAR
-                        for _ in range(lenghts[i]):
-                            elementStr = genotypeSeq[counter: counter+auxlenght]
-                            element = coding.get_fenotype(elementStr, typee)
-                            sequence.append(element)
-                            counter += auxlenght
-                        self.fenotype.append(sequence)
+            for j in range(len(self.basics)):
+                inds = get_indexes(self.basics[j],typee)
+                indseq = get_indexes(Types().seqof, typee)
+                if(inds):
+                    elements = []
+                    typee = typee[inds[0][0]:inds[0][1]]
+                    for _ in range(lenghts[i]):
+                        seggenotype = genotypeseq[counter: counter+self.nwords[j]]
+                        element = coding.get_fenotype(seggenotype, typee)
+                        elements.append(element)
+                        counter += self.nwords[j]
+                    if(indseq):
+                        self.fenotype.append(elements)
                     else:
-                        raise ValueError("Error")    
-                else:
-                    raise ValueError("Error")
-        
+                        self.fenotype.append(element)
+                    break
+
 
     def create_progenitor(self, DISTANCE:int, lenghts:list[int])->list:
         coding = Coding()
         chromosome = []
-        basicTypes = {'int', 'nat', 'nat0', 'real', 'char'}
-        patternSeq = "(seq)\s*(of)\s*"
+        basicTypes = fr"{Types().real}|{Types().int}|{Types().nat}|{Types().nat0}|{Types().char}"
+        patternSeq = Types().seqof
         for i in range(len(self.types)):
             indexes = get_indexes(patternSeq, self.types[i])
             if(indexes):
@@ -115,13 +49,13 @@ class Individual:
                 self.fenotype.append(elements.copy())
             else:
                 typee = self.types[i]
-                if(typee in basicTypes):
+                indexes = get_indexes(basicTypes, typee)
+                if(indexes):
                     element = coding.generate_element(self.types[i], DISTANCE)
                     self.fenotype.append(element)
                     elements = [element]
                 else:
                     raise ValueError("Individual Error")
-                
             for element in elements:
                 chromosome = coding.get_genotype(element, typee)
                 self.genotype = self.genotype + chromosome
