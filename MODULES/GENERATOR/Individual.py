@@ -1,7 +1,9 @@
 from MODULES.GENERATOR.auxiliary import Coding
-import re
+
+from MODULES.regex_functions import get_indexes
 
 class Individual:
+    __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR','fenotype','genotype','types')
     def __init__(self, types:list) -> None:    
         # -4096.00 to 4096.00
         self.N_WORD_REAL = 32
@@ -55,11 +57,9 @@ class Individual:
                 counter += auxlenght
 
             else:
-                search = re.search(patternSeq, typee)
-                if(search):
-                    index = search.span()
-                    typee = typee[index[1]:]
-                    
+                index = get_indexes(patternSeq, typee)
+                if(index):
+                    typee = typee[index[0][1]:]
                     sequence = []
                     if(typee in {'real'}):
                         auxlenght = self.N_WORD_REAL
@@ -108,10 +108,9 @@ class Individual:
         basicTypes = {'int', 'nat', 'nat0', 'real', 'char'}
         patternSeq = "(seq)\s*(of)\s*"
         for i in range(len(self.types)):
-            search = re.search(patternSeq, self.types[i])
-            if(search):
-                index = search.span()
-                typee = self.types[i][index[1]:]
+            indexes = get_indexes(patternSeq, self.types[i])
+            if(indexes):
+                typee = self.types[i][indexes[0][1]:]
                 elements = coding.generate_sequence(typee, DISTANCE, lenghts[i])
                 self.fenotype.append(elements.copy())
             else:

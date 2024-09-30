@@ -32,8 +32,8 @@ class Mutator:
                     break
                 for i in range(adjust, len(targetConditions[it])):
                     extDict = {}
-                    indexes_le = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.le, targetConditions[it][i])
-                    indexes_ge = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.ge, targetConditions[it][i])
+                    indexes_le = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.le_, targetConditions[it][i])
+                    indexes_ge = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.ge_, targetConditions[it][i])
                     indexes_ne = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.inequality_, targetConditions[it][i])
                     if(len(indexes_le)!=0):
                         extDict = self.extend_set_of_predicates(targetConditions[it], fixedConditions[it], i, indexes_le, mutation.less, mutation.equal)

@@ -1,3 +1,5 @@
+from MODULES.regex_functions import get_indexes, replace_pattern
+from MODULES.regex_patterns import Operator
 from fxpmath import Fxp
 import random
 
@@ -64,12 +66,6 @@ class Coding:
                 x_rec = chr(x_rec)
             else:
                 x_rec = None
-            # if(x_rec >= 32 and x_rec <= 126):
-            #     x_rec = chr(x_rec)
-            # elif(x_rec<32):
-            #     x_rec = chr(32)
-            # else:
-            #     x_rec = chr(126)
         else:
             raise ValueError("Error")
         return x_rec
@@ -95,3 +91,83 @@ class Coding:
     def generate_sequence(self, typee:str, DISTANCE:int, LENGHT:int)->list:
         sequence = [self.generate_element(typee, DISTANCE) for _ in range(LENGHT)]
         return sequence 
+
+
+class Evaluate:
+    def __init__(self):
+        pass
+
+    def substitute_values(self, atomicp:str, variables:list, chromosome:list) -> list:
+        # Función que toma un predicado atomico y substituye las variables en el
+        # Con sus valores generados presentes la variable "chromosoma"
+        # donde cada elemento del cromosoma es un valor generador para
+        # la varible con su mismo indice. len(variable) = len(chromosome)
+        for i in range(len(variables)):
+            pattern = rf"\b{variables[i]}\b"
+            if(get_indexes(pattern, atomicp)):
+                atomicp = replace_pattern(pattern, str(chromosome[i]), atomicp)
+        return atomicp
+
+
+    def relational(self, left:str, right:str, operator:str):
+        # Funcion que permite evaluar una expresión relacional y 
+        # regresa un error. La parte izquiera y derecha de la expresión
+        # no contienen variables.
+        op = Operator('relational')
+        try:
+            left = float(eval(left))
+            right = float(eval(right))
+        except ZeroDivisionError:
+            error = 100.0
+            return error
+        indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
+        if(indsgreat or indsless or indseq):
+            diff = left - right
+            if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and diff==0):
+                error = 0.0
+            else:
+                error = abs(diff)
+        else:
+            raise ValueError("Invalid Operator")
+
+#
+    def set(self, left:str, right:str, operator:str):
+        op = Operator('set')
+        errors = []
+
+        try:
+            left = eval(left.replace("\\", "\\\\"))
+            right = eval(right)
+            if(left==None):
+                raise TypeError
+        except TypeError:
+            return 200
+        
+        for element in right:
+            error = 0.0
+            for i,j in zip(left,element):
+                typei, typej = type(i),type(j)
+                if(typei==typej):
+                    if(typei == str):
+                        error += abs(ord(i)-ord(j))
+                    elif(typei in {int,float}):
+                        error += abs(i-j)
+                    else:
+                        raise ValueError("El tipo de elementos no es valido")
+                else:
+                    raise ValueError("Elementos a evaluar no son del mismo tipo")
+            errors.append(error)
+        minimal = min(errors)
+        indsin, indsnot = get_indexes(op.inset_, operator), get_indexes(op.notin_, operator)
+        if(indsin):
+            return minimal
+        elif(indsnot):
+            if(minimal==0):
+                return 100
+            else:
+                return 0
+        else:
+            raise ValueError("Operador invalido")
+        
+        
+        

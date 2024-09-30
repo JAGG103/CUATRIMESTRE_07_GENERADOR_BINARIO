@@ -1,4 +1,12 @@
 
+
+class Types:
+    __slots__ = ('seqof')
+    def __init__(self, option:str):
+        if(option=='seq of'):
+            self.seqof = r'\bseq\s+of\s+\b'
+
+
 class Blocks:
     __slots__ = ('_process', 'process_','_forall','forall_','_exists','exists_')
     def __init__(self, option):
@@ -43,17 +51,17 @@ class Operator:
             self.inset_ = r'\s+inset\s+'
             self.notin_ = r'\s+notin\s+'
         elif(option in {'relational'}):
-            self.equality_ = r'\s*=\s*'
-            self.inequality_ = r'\s*<>\*'
-            self.le = r'\s*<=\s*'
-            self.ge = r'\s*>=\s*'
-            self.less = r'\s*<\s*'
-            self.greater = r'\s*>\s*'
+            self.equality_ = r"(?<!')\s*=\s*(?!')"
+            self.inequality_ = r"(?<!')\s*<>\*"
+            self.le_ = r"(?<!')\s*<=\s*(?!')"
+            self.ge_ = r"(?<!')\s*>=\s*(?!')"
+            self.less_ = r"(?<!')\s*<\s*(?!')"
+            self.greater_ = r"(?<!')\s*>\s*(?!')"
         else:
             raise ValueError("Error: opción no valida {'logic', 'set', 'relational'}")
 
 class Delimiters:
-    __slots__ = ('_evaluation','evaluation_','_disyuntos','disyuntos_')
+    __slots__ = ('_evaluation','evaluation_','_disyuntos','disyuntos_','_function','function_')
     def __init__(self, option):
         if(option == 'evaluation'):
             self._evaluation = r"\{"

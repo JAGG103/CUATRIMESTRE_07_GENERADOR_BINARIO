@@ -22,49 +22,38 @@ class Classificator:
         testConditionsG = []
         defConditionsG = []
         for testc,defc in iter(zip(testConditions, defConditions)):
-            testcstr = self._and_.join(testc)
-            groups = self.groupping(testcstr, patterns, check, names)
+            groups = self.groupping(testc, patterns, check, names)
             testConditionsG.append(groups)
-            defcstr = self._and_.join(defc)
-            groups = self.groupping(defcstr, patterns, check, names)
+            groups = self.groupping(defc, patterns, check, names)
             defConditionsG.append(groups)
         return testConditionsG, defConditionsG
 
 
-    def groupping(self, predicate:str,patterns:list, check:list, names:list) -> dict:
+    def groupping(self, condition:list, patterns:list, check:list, names:list) -> dict:
         groups = dict()
         elements = []
         for pattern in patterns:
-            predicate, element = self.manage_members(pattern, predicate)
+            element = self.create_group(pattern, condition)
             elements.append(element)
-        for pattern in check:
-            if(get_indexes(pattern, predicate)!=None):
-                raise ValueError(f"Error en agrupador {predicate}")
-        if(len(predicate)!=0):
-            element = predicate.split(self._and_)
-            elements.append(element)
-        else:
-            elements.append([])
-        if(len(elements)==len(names)):
-            for i in range(len(names)):
-                groups[names[i]] = elements[i]
-        else:
-            raise ValueError("Grupos no concuerdan con el numero de clasificaciones")
+        pattern = "|".join(check)
+        for atom in condition:
+            if(get_indexes(pattern, atom)!=None):
+                raise ValueError(f"Error en agrupador {atom}")
+        elements.append(condition.copy())
+        for i in range(len(names)):
+            groups[names[i]] = elements[i]
         return groups
     
 
-    def manage_members(self, pattern:str, predicate: str) -> tuple[str, list]:
-        LOWER = 0
-        UPPER = 1
+    def create_group(self, pattern:str, condition: list[str]) -> list:
         atoms = []
-        logic = Operator('logic')
-        indexes = get_indexes(pattern, predicate)
-        if(indexes==None):
-            return (predicate, atoms)
-        else:
-            atoms = [predicate[index[LOWER]:index[UPPER]] for index in indexes]
-            predicate = replace_pattern( logic.and_ + pattern + logic.and_, self._and_, predicate)
-            predicate = replace_pattern( logic.and_ + pattern , '', predicate)
-            predicate = replace_pattern( pattern + logic.and_ , '', predicate)
-            predicate = replace_pattern( pattern , '', predicate)
-            return (predicate, atoms)
+        out = True
+        while(out):
+            out = False
+            for i in range(len(condition)):
+                indexes = get_indexes(pattern, condition[i])
+                if(indexes):
+                    atoms += [condition.pop(i)]
+                    out = True
+                    break
+        return atoms
