@@ -30,11 +30,9 @@ class Analyzer:
     def get_init(self, processInit:str):
         init = {}
         lines = processInit.split('\n')
-        if(len(lines)==2):
-            init = {}
-        else:
-            lines.pop(0)
-            lines.pop(-1)
+        lines.pop(0)
+        lines.pop(-1)
+        if(lines!=[]):
             for line in lines:
                 clave, valor = split_with_pattern(Operator('relational').equality_, line)
                 valor = eval(valor)
@@ -42,52 +40,45 @@ class Analyzer:
         self.init = init
 
     # GET_INFO_PROCESSUT
-    def get_info_processUT(self, processUT):
-        specification = Specification('keys')
+    def get_info_processUT(self, processUT:str)->list:
         linesls = processUT.split('\n')
         for line in linesls:
-            if(get_indexes(specification.process, line)!=None):
+            if(len(line)==0 or get_indexes(Specification('keys').end_process,line)):
+                continue
+            elif(get_indexes(Specification('keys').process, line)!=None):
                 self.inPort, self.outPort = self.get_ports(line)
-            elif(get_indexes(specification.aux,line)!=None):
+            elif(get_indexes(Specification('keys').aux,line)!=None):
                 self.inAuxPort, self.outAuxPort = self.get_ports(line)
-            elif(get_indexes(specification.ext, line)!=None):
+            elif(get_indexes(Specification('keys').ext, line)!=None):
                 self.get_external_variables(line)
-            elif(get_indexes(specification.pre, line)!=None):
+            elif(get_indexes(Specification('keys').pre, line)!=None):
                 self.get_pre(line)
-            elif(get_indexes(specification.post, line)!=None):
+            elif(get_indexes(Specification('keys').post, line)!=None):
                 postls = self.return_post(line)
             else:
-                if(len(line)==0 or get_indexes(specification.end_process,line)):
-                    continue
-                else:
-                    raise ValueError(f"Elemento en la especificación que no corresponde {line}")
+                raise ValueError(f"Elemento en la especificación que no corresponde {line}")
         return postls
     
     # GET_TESTCONDITIONS_DEFCONDITIONS
     def get_testconditions_defconditions(self, prels, postls):
-        tcs = []
-        dcs = []
-        varnames_out = self.outPort['variables'] + self.outAuxPort['variables']
+        tcs,dcs = [],[]
+        patterns = [rf"\b{variable}\b" for variable in self.outPort['variables']]
+        patterns_= [rf"\b{variable}\b" for variable in self.outAuxPort['variables']]  
+        patterns = r"|".join(patterns + patterns_)
         fss = self.return_functional_scenarios(prels, postls)
         for fs in fss:
-            tc = []
-            dc = []
-            for e in fs:
-                cond = 0
-                for varname in varnames_out:
-                    pattern = rf'\b{varname}\b'
-                    if(get_indexes(pattern, e)==None):
-                        cond = cond
-                    else:
-                        cond = 1
-                if(cond==1):
-                    dc.append(e)
+            tc, dc = [],[]
+            for atom in fs:
+                if(get_indexes(patterns, atom)):
+                    dc.append(atom)
                 else:
-                    tc.append(e)
-            tcs.append(tc)
-            dcs.append(dc)
+                    tc.append(atom)
+            tcs += [tc]
+            dcs += [dc]
         self.testConditions = tcs
         self.defConditions = dcs
+        
+        
     
     # AUXILIARES
     def return_functional_scenarios(self, prels:list, postls:list)->list[list]:
@@ -106,25 +97,18 @@ class Analyzer:
         indexes = indexes_avoiding_head_and_tail([quan._forall,quan._exists],[quan.forall_,quan.exists_],logic.and_,line)
         if(len(indexes)>0):
             self.prels = get_elements_notin_indexes(indexes, line)
-        else:
-            self.prels
             
     def return_post(self, line:str):
-        logic = Operator('logic')
-        quantif = Blocks('quantifiers')
-        specification = Specification('keys')
-        delimiter = Delimiters('disyuntos')
-
-        indexes = get_indexes(specification.post, line)
-        poststr = line[indexes[0][1]:]
-        postls = splitp_lookbehind_and_lookhead(delimiter.disyuntos_, logic.or_, delimiter._disyuntos, poststr)
+        inds = get_indexes(Specification('keys').post, line)
+        poststr = line[inds[0][1]:]
+        postls = splitp_lookbehind_and_lookhead(Delimiters('disyuntos').disyuntos_, Operator('logic').or_, Delimiters('disyuntos')._disyuntos, poststr)
         postls = [e[1:-1] for e in postls]
-        indexesgen = (indexes_avoiding_head_and_tail([quantif._forall,quantif._exists],[quantif.forall_,quantif.exists_],logic.and_,element) for element in postls)
-        
+        indexesgen = (indexes_avoiding_head_and_tail([Blocks('quantifiers')._forall, Blocks('quantifiers')._exists],[Blocks('quantifiers').forall_, Blocks('quantifiers').exists_], Operator('logic').and_, element) for element in postls)
         for i in range(len(postls)):
             indexes = next(indexesgen)
             postls[i] = get_elements_notin_indexes(indexes, postls[i])
         return postls
+
 
     def get_ports(self, line:str)->tuple[dict]:
         specification = Specification('ports')
@@ -135,29 +119,26 @@ class Analyzer:
             outportstr = line[op[0][0]:op[0][1]]
         elif(ip!=None):
             inportstr = line[ip[0][0]:ip[0][1]]
-            outportstr = ""
+            outportstr = None
         else:
-            inportstr = ""
-            outportstr = ""
+            inportstr = None
+            outportstr = None
         inport = self.turn_ports_to_dict(inportstr)
         outport = self.turn_ports_to_dict(outportstr)
         return inport, outport
         
 
-    def turn_ports_to_dict(self, port:str)->dict:
-        variables = []
-        types = []
-        if(len(port)>0):
-            specification = Specification('ports')
-            portls = port.split(specification.sepv)
+    def turn_ports_to_dict(self, port:str|None)->dict:
+        variables, types = [],[]
+        if(port):
+            portls = port.split(Specification('ports').sepv)
             for element in portls:
-                variable, typee = element.split(specification.sept)
-                variables.append(variable)
-                types.append(typee)
-            port = {'variables':variables, 'types':types}
-        else:
-            port = {'variables':variables, 'types':types}
+                variable, typee = element.split(Specification('ports').sept)
+                variables += [variable]
+                types += [typee]
+        port = {'variables':variables, 'types':types}
         return port
+
 
     def get_external_variables(self, line:str):
         specification = Specification('keys')

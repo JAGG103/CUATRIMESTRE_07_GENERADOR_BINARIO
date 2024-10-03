@@ -8,22 +8,17 @@ import numpy as np
 from copy import deepcopy
 
 class GeneticAlgorithm:
-    __slots__ = ('N_WORDS','solution','values')
-    def __init__(self, parameters:dict, variables:list, types:list ,condition:dict, values:dict):
+    __slots__ = ('N_WORDS','solution','solutiondict')
+    def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
         self.N_WORDS = {'real':32,'int':13,'nat':12,'char':7}
-        self.solution = self.generate(parameters, variables, types, condition, values)
-        self.values = {i:round(j,5) for i,j in zip(variables, self.solution)}
-        print(self.values)
+        self.solution = self.generate(parameters, variables, types, condition)
+        self.solutiondict = {i:round(j,5) for i,j in zip(variables, self.solution)}
 
-    def generate(self, parameters:dict, variables:list, types:list, condition:dict, values:dict):
+    def generate(self, parameters:dict, variables:list, types:list, condition:dict):
         # parameters.keys() in {'n_population','m_probability', 'generations', 'distance'}
         bestindividual = None
         solved = False
         generation = 0
-
-        for key in condition.keys():
-            for i in range(len(condition[key])):
-                condition[key][i] = Evaluate().substitute_dict(values, condition[key][i]) 
 
         lenghts = self.get_lenghts(types, variables, condition['func len'])
         genotypelenght = self.get_chrosome_lenght(types, lenghts)
@@ -57,7 +52,7 @@ class GeneticAlgorithm:
         if(solved):
             return bestindividual.fenotype
         else:
-            raise UnoptimalIndividual("")
+            raise UnoptimalIndividual("No se encontraron soluciones")
 
 
 
@@ -156,20 +151,15 @@ class GeneticAlgorithm:
         error += Evaluate().set(left, right, operator)
         return error
 
-    def get_error_universal_numeric(self, atomic:str, error:float):
+    def get_error_universal(self, atomic:str, error:float):
         # forall[i:{A...B}] | P() <o> P() <o> ... <o> P().
         # forall[i:{A...B}] | {P() <o> P() <o> ... P() implies Q() <o> Q() <o> ... <o> Q()} or {}
  
         pass
 
-    def get_error_existential_numeric(self):
+    def get_error_existential(self):
         pass
 
-    def get_error_universal_elems(self):
-        pass
-
-    def get_error_universal_inds(self):
-        pass
 
     def error_function(self, groups:dict, variables:list, fenotype:list):
         names = ['relational','set']
