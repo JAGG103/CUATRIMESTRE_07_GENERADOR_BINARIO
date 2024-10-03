@@ -2,6 +2,7 @@ from MODULES.regex_functions import get_indexes, replace_pattern
 from MODULES.regex_patterns import Operator
 from fxpmath import Fxp
 import random
+import math
 
 class Coding:
     def __init__(self):
@@ -97,6 +98,13 @@ class Evaluate:
     def __init__(self):
         pass
 
+    def substitute_dict(self, values:dict, atom:str):
+        for variable in values.keys():
+            pattern = rf'\b{variable}\b'
+            if(get_indexes(pattern, atom)):
+                atom = replace_pattern(pattern, str(values[variable]), atom)
+        return atom
+
     def substitute_values(self, atomicp:str, variables:list, chromosome:list) -> list:
         # Función que toma un predicado atomico y substituye las variables en el
         # Con sus valores generados presentes la variable "chromosoma"
@@ -123,12 +131,13 @@ class Evaluate:
         indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
         if(indsgreat or indsless or indseq):
             diff = left - right
-            if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and diff==0):
+            if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and (diff==0 or math.isclose(diff,0.0,abs_tol=0.00001))):
                 error = 0.0
             else:
                 error = abs(diff)
         else:
             raise ValueError("Invalid Operator")
+        return error
 
 #
     def set(self, left:str, right:str, operator:str):

@@ -103,6 +103,10 @@ class Analyzer:
     def get_pre(self, line:str):
         quan = Blocks('quantifiers')
         logic = Operator('logic')
+        specification = Specification('keys')
+
+        inds = get_indexes(specification.pre, line)
+        line = line[inds[0][1]:]
         indexes = indexes_avoiding_head_and_tail([quan._forall,quan._exists],[quan.forall_,quan.exists_],logic.and_,line)
         if(len(indexes)>0):
             self.prels = get_elements_notin_indexes(indexes, line)

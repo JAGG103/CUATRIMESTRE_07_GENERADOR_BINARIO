@@ -1,48 +1,43 @@
 from MODULES.regex_patterns import Operator, Types
-from MODULES.regex_functions import get_indexes,split_with_pattern,replace_pattern
-
+from MODULES.regex_functions import get_indexes,split_with_pattern
 from MODULES.GENERATOR.Individual import Individual
 from MODULES.GENERATOR.auxiliary import Evaluate
+from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 
 import numpy as np
 from copy import deepcopy
 
 class GeneticAlgorithm:
-    def __init__(self, parameters:dict, variables:list, types:list ,conditions:dict):
+    __slots__ = ('N_WORDS','solution','values')
+    def __init__(self, parameters:dict, variables:list, types:list ,condition:dict, values:dict):
         self.N_WORDS = {'real':32,'int':13,'nat':12,'char':7}
-        self.generate(parameters, variables, types, conditions)
+        self.solution = self.generate(parameters, variables, types, condition, values)
+        self.values = {i:round(j,5) for i,j in zip(variables, self.solution)}
+        print(self.values)
 
-
-    def generate(self, parameters:dict, variables:list, types:list, conditions:dict):
+    def generate(self, parameters:dict, variables:list, types:list, condition:dict, values:dict):
         # parameters.keys() in {'n_population','m_probability', 'generations', 'distance'}
-        ivector = [0.03, 0.01, 0.005]
-        ifitness = [1/20, 1/10, 1/2] # [1/8,1/4,1/2]
         bestindividual = None
         solved = False
         generation = 0
 
-        lenghts = self.get_lenghts(types, variables, conditions['func len'])
+        for key in condition.keys():
+            for i in range(len(condition[key])):
+                condition[key][i] = Evaluate().substitute_dict(values, condition[key][i]) 
+
+        lenghts = self.get_lenghts(types, variables, condition['func len'])
         genotypelenght = self.get_chrosome_lenght(types, lenghts)
         population = self.create_population(parameters['n_population'], types, parameters['distance'], lenghts)
         while(generation < parameters['generations']):
 
-            fitnessvector,indbest = self.get_fitness_vector(population,conditions,variables)
+            fitnessvector,indbest = self.get_fitness_vector(population,condition,variables)
 
             bestindividual = deepcopy(population[indbest])
-            print(f"{generation} : {bestindividual.fenotype} : {fitnessvector[indbest]}")
+            #print(f"{generation} : {bestindividual.fenotype} : {fitnessvector[indbest]}")
             
             if(fitnessvector[indbest] == 1):
                 solved = True
                 break
-            elif(fitnessvector[indbest] >= ifitness[0] and fitnessvector[indbest]<ifitness[1] and parameters['m_probability']!=ivector[0]):
-                parameters['m_probability'] = ivector[0]
-                print("UP")
-            elif(fitnessvector[indbest] >= ifitness[1] and fitnessvector[indbest]<ifitness[2] and parameters['m_probability'] != ivector[1]):
-                parameters['m_probability'] = ivector[1]
-                print("UP")
-            elif(fitnessvector[indbest] >= ifitness[2] and parameters['m_probability'] != ivector[2]):
-                parameters['m_probability'] = ivector[2]
-                print("UP")
 
             probabilityvector = self.get_probability_vector(fitnessvector)
 
@@ -59,7 +54,10 @@ class GeneticAlgorithm:
 
             generation += 1
         
-        print(bestindividual.fenotype, solved)
+        if(solved):
+            return bestindividual.fenotype
+        else:
+            raise UnoptimalIndividual("")
 
 
 
@@ -158,7 +156,10 @@ class GeneticAlgorithm:
         error += Evaluate().set(left, right, operator)
         return error
 
-    def get_error_universal_numeric(self):
+    def get_error_universal_numeric(self, atomic:str, error:float):
+        # forall[i:{A...B}] | P() <o> P() <o> ... <o> P().
+        # forall[i:{A...B}] | {P() <o> P() <o> ... P() implies Q() <o> Q() <o> ... <o> Q()} or {}
+ 
         pass
 
     def get_error_existential_numeric(self):
