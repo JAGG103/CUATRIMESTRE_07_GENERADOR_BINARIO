@@ -21,17 +21,13 @@ class Analyzer:
 
     # GET_PROCESSES
     def get_processes(self, specification):
-        block = Blocks('process')
-        start = block._process
-        end = block.process_
-        indexes = get_indexes_blocks(specification, start, end)
+        indexes = get_indexes_blocks(specification, Blocks('process')._process, Blocks('process').process_)
         processInit = specification[indexes[0][0]:indexes[0][1]]
         processUT = specification[indexes[1][0]:indexes[1][1]]
         return processInit, processUT
     
     # GET_INIT
     def get_init(self, processInit:str):
-        operator = Operator('relational')
         init = {}
         lines = processInit.split('\n')
         if(len(lines)==2):
@@ -40,7 +36,7 @@ class Analyzer:
             lines.pop(0)
             lines.pop(-1)
             for line in lines:
-                clave, valor = split_with_pattern(operator.equality_, line)
+                clave, valor = split_with_pattern(Operator('relational').equality_, line)
                 valor = eval(valor)
                 init.update({clave:valor})
         self.init = init

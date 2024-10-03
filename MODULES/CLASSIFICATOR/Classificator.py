@@ -2,20 +2,17 @@ from MODULES.regex_patterns import Universal, Existential, Operator, Blocks, Set
 from MODULES.regex_functions import get_indexes
 
 class Classificator:
-    __slots__ = ('testConditions','defConditions','_and_')
+    __slots__ = ('testConditions','defConditions')
     def __init__(self, testConditions:list, defConditions:list):
-        self._and_ = ' and '
         check = [Blocks('quantifiers')._forall, Blocks('quantifiers')._exists]
         check += [Operator('logic').or_, Operator('logic').implies_]
-        patterns = [Universal('numeric').generation, Existential('numeric').generation, Universal('elems').generation, Universal('inds').generation]
-        patterns += [Universal('numeric').evaluation, Universal('elems').evaluation, Universal('inds').evaluation]
-        patterns += [Set('in').in_+'|'+ Set('not').not_]
-        patterns += [Functions('len').len]
-        names = ['universal numeric generation', 'existential numeric generation', 'universal elems generation', 'universal inds generation']
-        names += ['universal numeric evaluation', 'universal elems evaluation', 'universal inds evaluation']
-        names += ['set']
-        names += ['func len']
-        names += ['relational']
+        patterns = [Functions('len').len]
+        patterns += [Universal('generation').pattern, Existential('generation').pattern, Universal('evaluation').pattern]
+        patterns += [Set().in_ + '|' + Set().not_]
+        names =  ['func len']
+        names += ['Universal Generation','Existential Generation','Universal Evaluation']
+        names += ['set','relational']
+
         self.testConditions, self.defConditions = self.main(testConditions, defConditions, patterns, check, names)
     
     def main(self, testConditions:list, defConditions:list, patterns:list, check:list, names:list):
