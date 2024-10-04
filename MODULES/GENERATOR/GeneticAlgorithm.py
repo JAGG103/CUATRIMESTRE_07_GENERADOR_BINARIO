@@ -1,5 +1,5 @@
-from MODULES.regex_patterns import Operator, Types
-from MODULES.regex_functions import get_indexes,split_with_pattern
+from MODULES.regex_patterns import Operator, Types, Universal, Delimiters, Set
+from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern, get_indexes_blocks
 from MODULES.GENERATOR.Individual import Individual
 from MODULES.GENERATOR.auxiliary import Evaluate
 from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
@@ -12,7 +12,7 @@ class GeneticAlgorithm:
     def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
         self.N_WORDS = {'real':32,'int':13,'nat':12,'char':7}
         self.solution = self.generate(parameters, variables, types, condition)
-        self.solutiondict = {i:round(j,5) for i,j in zip(variables, self.solution)}
+        self.solutiondict = {i:j for i,j in zip(variables, self.solution)}
 
     def generate(self, parameters:dict, variables:list, types:list, condition:dict):
         # parameters.keys() in {'n_population','m_probability', 'generations', 'distance'}
@@ -28,7 +28,7 @@ class GeneticAlgorithm:
             fitnessvector,indbest = self.get_fitness_vector(population,condition,variables)
 
             bestindividual = deepcopy(population[indbest])
-            #print(f"{generation} : {bestindividual.fenotype} : {fitnessvector[indbest]}")
+            print(f"{generation} : {bestindividual.fenotype} : {fitnessvector[indbest]}")
             
             if(fitnessvector[indbest] == 1):
                 solved = True
@@ -132,43 +132,127 @@ class GeneticAlgorithm:
 
     # Calculo de los errores
 
-    def get_error_relational(self, atomicp:str, error:float):
+    def get_error_relational(self, atomicp:str):
         # Método que sustituye en el predicado atómico relacional con la posible solución (presente en el fenotipo) y calcula su error 
         op = Operator('relational')
         pattern = rf"{op.less_}|{op.greater_}|{op.equality_}"
         indexes = get_indexes(pattern, atomicp)
         operator = atomicp[indexes[0][0]:indexes[0][1]]
         left, right = split_with_pattern(pattern, atomicp)
-        error += Evaluate().relational(left, right, operator)
+        error = Evaluate().relational(left, right, operator)
         return error
 
-    def get_error_set(self, atomicp:str, error:float):
+    def get_error_set(self, atomicp:str):
         op = Operator('set')
         pattern = rf"{op.inset_}|{op.notin_}"
         indexes = get_indexes(pattern, atomicp)
         operator = atomicp[indexes[0][0]:indexes[0][1]]
         left, right = split_with_pattern(pattern, atomicp)
-        error += Evaluate().set(left, right, operator)
+        error = Evaluate().set(left, right, operator)
         return error
 
-    def get_error_universal(self, atomic:str, error:float):
-        # forall[i:{A...B}] | P() <o> P() <o> ... <o> P().
-        # forall[i:{A...B}] | {P() <o> P() <o> ... P() implies Q() <o> Q() <o> ... <o> Q()} or {}
- 
-        pass
+    def get_error_universal(self, atomic:str):
+        # forall[ domain ] | P() <o> P() <o> ... <o> P().
+        pmiddle = Delimiters('middleQuan').middle
+        pforall = Universal('generation')
+        op = Operator('logic')
+        sett = Set()
+        AND,OR,NAO = 0,1,2
+        DNU,DEL,DIN = 0,1,2
+        operador = None
+        domaintype = None
+        atoms = list()
 
+        # Contenido
+        inds = get_indexes(pmiddle, atomic)
+        content = atomic[inds[0][1]:-1]
+        inds_and = get_indexes(op.and_, content)
+        inds_or = get_indexes(op.or_, content)
+        if(inds_and):
+            operador = AND
+            atoms = split_with_pattern(op.and_, content)
+        elif(inds_or):
+            operador = OR
+            atoms = split_with_pattern(op.or_, content)
+        else:
+            operador = NAO
+            atoms += [content]
+        
+        # iterable variable
+        content = atomic[:inds[0][0]]
+        inds = get_indexes(pforall.iterv, content)
+        iterv = content[inds[0][0]:inds[0][1]]
+        iterv = rf'\b{iterv}\b'
+        # dominio
+        inds_domnum = get_indexes_blocks(content, pforall._domainnum, pforall.domainnum_)
+        inds_domele = get_indexes_blocks(content, pforall._domainelems, pforall.domainelems_)
+        inds_domind = get_indexes_blocks(content, pforall._domaininds, pforall.domaininds_)
+        if(inds_domnum):
+            domain = content[inds_domnum[0][0]+1:inds_domnum[0][1]-1]
+            start, end = split_with_pattern('(\.\.\.)', domain)
+            domaintype = DNU
+        elif(inds_domele):
+            domain = content[inds_domele[0][0]+len('elems('):inds_domele[0][1]-len(')')]
+            start, end = '0',f'len({domain})'
+            domaintype = DEL
+        elif(inds_domind):
+            domain = content[inds_domind[0][0]+len('inds('):inds_domind[0][1]-len(')')]
+            start, end = '0',f'len({domain})'
+            domaintype = DIN
+        else:
+            raise ValueError("Dominios invalidos en cuantificador universal")
+
+        # Sustitución
+        accumerr = 0.0
+        accumerrls = []
+        functions = [self.get_error_set, self.get_error_relational]
+        SET,REL = 0,1
+        aux = None
+        start = start.replace("\\", "\\\\")
+        end = end.replace("\\", "\\\\")
+        for i in range(eval(start), eval(end)):
+            errormin = float("inf")
+            for atom in atoms:
+                inds = get_indexes(sett.in_ + r'|' + sett.not_, atom)
+                if(inds):
+                    aux = SET
+                else:
+                    aux = REL
+                if(domaintype in {DNU, DIN}):
+                    element = str(i)
+                else:
+                    element = f"{domain}[{i}]"
+                atom = replace_pattern(iterv, element, atom)
+                if(operador == AND):
+                    error = functions[aux](atom)
+                    accumerr += error
+                elif(operador == OR):
+                    error = functions[aux](atom)
+                    if(error<errormin):
+                        errormin = error
+                else:
+                    error = functions[aux](atom)
+                    accumerr += error
+            if(operador==OR):
+                accumerrls += [errormin]
+        if(operador==OR):
+            return max(accumerrls)
+        else:
+            return accumerr
+
+            
     def get_error_existential(self):
         pass
 
 
     def error_function(self, groups:dict, variables:list, fenotype:list):
-        names = ['relational','set']
-        functions = [self.get_error_relational, self.get_error_set]
+        names = ['relational','set', 'universal generation']
+        functions = [self.get_error_relational, self.get_error_set, self.get_error_universal]
         error = 0.0
         for i in range(len(names)):
             for atomicp in groups[names[i]]:
                 atomicp = Evaluate().substitute_values(atomicp, variables, fenotype)
-                error += functions[i](atomicp, error)
+                error += functions[i](atomicp)
         return error
 
     # Crear vector de longitudes

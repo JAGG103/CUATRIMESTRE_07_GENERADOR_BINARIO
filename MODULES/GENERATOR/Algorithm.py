@@ -2,7 +2,7 @@ from MODULES.GENERATOR.GeneticAlgorithm import GeneticAlgorithm
 from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 # Aqui se trabajara con el algoritmo genético y algoritmo evaluador
 
-class Generator:
+class Algorithm:
 
     def __init__(self, parameters:dict, inport:dict, inaux:dict, outport:dict, outaux:dict, init:dict, testconditions:list[dict], defconditions:list[dict]):
         self.testcases = []
@@ -22,10 +22,10 @@ class Generator:
 
             while(tries < parameters['tries']):
                 try:
-                    testvalues = GeneticAlgorithm(parameters, variablesI, typesI, testcondition, {})
-                    tc.append(testvalues.solution)
+                    # testvalues = GeneticAlgorithm(parameters, variablesI, typesI, testcondition)
+                    # tc.append(testvalues.solution)
 
-                    testvalues = GeneticAlgorithm(parameters, variablesO, typesO, defcondition, testvalues.values)
+                    testvalues = GeneticAlgorithm(parameters, variablesO, typesO, defcondition)
                     tc.append(testvalues.solution)
                     break
                 except UnoptimalIndividual:

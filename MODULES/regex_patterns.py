@@ -65,7 +65,7 @@ class Operator:
             raise ValueError("Error: opción no valida {'logic', 'set', 'relational'}")
 
 class Delimiters:
-    __slots__ = ('_evaluation','evaluation_','_disyuntos','disyuntos_','_function','function_')
+    __slots__ = ('_evaluation','evaluation_','_disyuntos','disyuntos_','_domain','domain_','middle')
     def __init__(self, option):
         if(option == 'evaluation'):
             self._evaluation = r"(?<!')\{(?!')"
@@ -76,6 +76,8 @@ class Delimiters:
         elif(option == 'domain'):
             self._domain = r"(?<!')\[(?!')"
             self.domain_ = r"(?<!')\](?!')"
+        elif(option == 'middleQuan'):
+            self.middle = r"(?<!')\s*\|\s*(?!')"
 
 class Mutations:
     __slots__ = ('less','equal','greater')
@@ -88,12 +90,12 @@ class Set:
     __slots__ = ('in_','not_')
     def __init__(self):
         op = Operator('set')
-        self.in_ = "[\w\d\[\]\.\(\)']+" + op.inset_ + "(\{)[^\}]+(\})"
-        self.not_ = "[\w\d\[\]\.\(\)']+" + op.notin_ + "(\{)[^\}]+(\})"
+        self.in_ = "[\w\d\[\]\.\(\)']+" + op.inset_ + "(\{)[^\}]+(\})|[\w]+(\s)+(inset)(\s)+(set\()[^\)]+(\))"
+        self.not_ = "[\w\d\[\]\.\(\)']+" + op.notin_ + "(\{)[^\}]+(\})|[\w\d\[\]',]+(\s)+(notin)(\s)+(set\()[^\)]+(\))"
 
 
 class Universal:
-    __slots__ = ('pattern','domainnum','domaininds','domainelems')
+    __slots__ = ('pattern','_domainnum','domainnum_','_domaininds','domaininds_','_domainelems','domainelems_','iterv')
     def __init__(self, option:str):
         if(option == 'generation'):
             self.pattern = r'\bforall\b\[[^\]]+\]\s*\|\s*[^\}\.]+\.'
@@ -101,21 +103,26 @@ class Universal:
             self.pattern = r'\bforall\b\[[^\]]+\]\s*\|\s*[^\.]+\.'
         else:
             raise ValueError("Pattern Universal")
-        self.domainnum = r'\{[^\}]+\}'
-        self.domaininds = r'\binds\b\([^\)]+\)'
-        self.domainelems = r'\belems\b\([^\)]+\)'
+        self._domainnum = r"(?<!')\{(?<!')"
+        self.domainnum_ = r"(?<!')\}(?<!')"
+        self._domaininds = r'\binds\b\('
+        self.domaininds_ = r"(?<!')\)(?<!')"
+        self._domainelems = r"\belems\b\("
+        self.domainelems_ = r"(?<!')\)(?<!')"
+        self.iterv = r"(?<=\[)[\w\d]+(?=:)"
 
 class Existential:
-    __slots__ = ('pattern','domainnum')
+    __slots__ = ('pattern','domainnum','iterv')
     def __init__(self, option:str):
         if(option == 'generation'):
             self.pattern = r'\bforall\b\[[\]]+\s*\|\s*[^\}\.]+\.'
         else:
-            raise ValueError("Pattern Universal")
+            raise ValueError("Pattern Existential")
         self.domainnum = r'\{[^\}]+\}'
+        self.iterv = r"(?<=\()[\w\d]+(?=:)"
 
 class Functions:
     __slots__ = ('len')
     def __init__(self, option):
         if(option=='len'):
-            self.len = rf'len\([\w\d]+\){Operator('relational').equality_}[\d]+'
+            self.len = rf"len\([\w\d]+\){Operator('relational').equality_}[\d]+"

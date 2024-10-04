@@ -114,12 +114,15 @@ class Analyzer:
         specification = Specification('ports')
         ip = get_indexes(specification.inport, line)
         op = get_indexes(specification.outport, line)
-        if(ip!=None and op!=None):
+        if(ip and op):
             inportstr = line[ip[0][0]:ip[0][1]]
             outportstr = line[op[0][0]:op[0][1]]
-        elif(ip!=None):
+        elif(ip):
             inportstr = line[ip[0][0]:ip[0][1]]
             outportstr = None
+        elif(op):
+            inportstr = None
+            outportstr = line[op[0][0]:op[0][1]]
         else:
             inportstr = None
             outportstr = None

@@ -10,7 +10,7 @@ class Classificator:
         patterns += [Universal('generation').pattern, Existential('generation').pattern, Universal('evaluation').pattern]
         patterns += [Set().in_ + '|' + Set().not_]
         names =  ['func len']
-        names += ['Universal Generation','Existential Generation','Universal Evaluation']
+        names += ['universal generation','existential generation','universal evaluation']
         names += ['set','relational']
 
         self.testConditions, self.defConditions = self.main(testConditions, defConditions, patterns, check, names)
