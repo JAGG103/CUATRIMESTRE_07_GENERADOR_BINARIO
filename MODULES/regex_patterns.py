@@ -112,14 +112,19 @@ class Universal:
         self.iterv = r"(?<=\[)[\w\d]+(?=:)"
 
 class Existential:
-    __slots__ = ('pattern','domainnum','iterv')
+    __slots__ = ('pattern','_domainnum','domainnum_','_domaininds','domaininds_','_domainelems','domainelems_','iterv')
     def __init__(self, option:str):
         if(option == 'generation'):
-            self.pattern = r'\bforall\b\[[\]]+\s*\|\s*[^\}\.]+\.'
+            self.pattern = r'\bexists\b\[[^\]]+\]\s*\|\s*[^\}\.]+\.'
         else:
             raise ValueError("Pattern Existential")
-        self.domainnum = r'\{[^\}]+\}'
-        self.iterv = r"(?<=\()[\w\d]+(?=:)"
+        self._domainnum = r"(?<!')\{(?<!')"
+        self.domainnum_ = r"(?<!')\}(?<!')"
+        self._domaininds = r'\binds\b\('
+        self.domaininds_ = r"(?<!')\)(?<!')"
+        self._domainelems = r"\belems\b\("
+        self.domainelems_ = r"(?<!')\)(?<!')"
+        self.iterv = r"(?<=\[)[\w\d]+(?=:)"
 
 class Functions:
     __slots__ = ('len')
