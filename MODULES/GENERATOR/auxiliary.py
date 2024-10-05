@@ -1,5 +1,6 @@
-from MODULES.regex_functions import get_indexes, replace_pattern
-from MODULES.regex_patterns import Operator
+from MODULES.regex_functions import get_indexes, replace_pattern, split_with_pattern, get_indexes_blocks, indexes_avoiding_head_and_tail, get_elements_notin_indexes
+from MODULES.regex_patterns import Operator, Delimiters, Universal, Existential, Set
+
 from fxpmath import Fxp
 import random
 import math
@@ -93,30 +94,86 @@ class Coding:
         sequence = [self.generate_element(typee, DISTANCE) for _ in range(LENGHT)]
         return sequence 
 
+class Quantifiers:
+    __slots__ = ('atoms','operator','iterv','domain','domtype','start','end')
+    def __init__(self, predicate:str, target:int):
+        FORALL,EXISTS = (0,1)
+        if(target == FORALL):
+            self.extract_information(predicate, Universal('generation'))
+        elif(target == EXISTS):
+            self.extract_information(predicate, Existential('generation'))
+        else:
+            raise ValueError("Objetivo invalido")
 
-class Evaluate:
-    def __init__(self):
-        pass
+    def extract_information(self, atomic:str, quantifier:str):    
+        suchthat = Delimiters('such that').suchthat
+        evaluation = Delimiters('evaluation')
+        to = Delimiters('to').to
+        op = Operator('logic')
+        AND, OR, NONE = (1,2,3)
+        DNUM, DELEM, DINDS = (1,2,3)
+        inds = get_indexes(suchthat, atomic)
+        # Contenido
+        content = atomic[inds[0][1]:-1]
+        inds_and = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.and_,content), AND
+        inds_or = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.or_,content), OR
+        if(inds_and):
+            atoms, operator = get_elements_notin_indexes(inds_and, content), AND
+        elif(inds_or):
+            atoms, operator = get_elements_notin_indexes(inds_or, content), OR
+        else:
+            atoms, operator = [content], NONE 
+        # Iterable variable
+        content = atomic[:inds[0][0]]
+        inds = get_indexes(quantifier.iterv, content)
+        iterv = content[inds[0][0]:inds[0][1]]
+        iterv = rf'\b{iterv}\b'
+        # dominio
+        inds_domnum = get_indexes_blocks(content, quantifier._domainnum, quantifier.domainnum_)
+        inds_domelem = get_indexes_blocks(content, quantifier._domainelems, quantifier.domainelems_)
+        inds_dominds = get_indexes_blocks(content, quantifier._domaininds, quantifier.domaininds_)
+        if(inds_domnum):
+            domain = content[inds_domnum[0][0]+1:inds_domnum[0][1]-1]
+            start, end = split_with_pattern(to, domain)
+            domtype = DNUM
+        elif(inds_domelem):
+            domain = content[inds_domelem[0][0]+6:inds_domelem[0][1]-1]
+            start, end = '0',f'len({domain})'
+            domtype = DELEM
+        elif(inds_dominds):
+            domain = content[inds_dominds[0][0]+5:inds_dominds[0][1]-1]
+            start, end = '0',f'len({domain})'
+            domtype = DINDS
+        else:
+            raise ValueError("Dominios invalidos en cuantificador")
+        self.atoms = atoms
+        self.operator = operator
+        self.iterv = iterv
+        self.domain = domain
+        self.domtype = domtype
+        self.start = start
+        self.end = end
 
-    def substitute_dict(self, values:dict, atom:str):
+class Substitute:
+    def substitute_dict(values:dict, predicate:str):
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
-            if(get_indexes(pattern, atom)):
+            if(get_indexes(pattern, predicate)):
                 atom = replace_pattern(pattern, str(values[variable]), atom)
         return atom
 
-    def substitute_values(self, atomicp:str, variables:list, chromosome:list) -> list:
+    def substitute_values(predicate:str, variables:list, values:list) -> list:
         # Función que toma un predicado atomico y substituye las variables en el
         # Con sus valores generados presentes la variable "chromosoma"
         # donde cada elemento del cromosoma es un valor generador para
         # la varible con su mismo indice. len(variable) = len(chromosome)
         for i in range(len(variables)):
             pattern = rf"\b{variables[i]}\b"
-            if(get_indexes(pattern, atomicp)):
-                atomicp = replace_pattern(pattern, str(chromosome[i]), atomicp)
-        return atomicp
+            if(get_indexes(pattern, predicate)):
+                atomicp = replace_pattern(pattern, str(values[i]), predicate)
+        return predicate
 
-
+class Evaluate:
     def relational(self, left:str, right:str, operator:str):
         # Funcion que permite evaluar una expresión relacional y 
         # regresa un error. La parte izquiera y derecha de la expresión
@@ -139,7 +196,6 @@ class Evaluate:
             raise ValueError("Invalid Operator")
         return error
 
-#
     def set(self, left:str, right:str, operator:str):
         op = Operator('set')
         errors = []

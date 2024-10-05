@@ -1,7 +1,7 @@
 from MODULES.regex_patterns import Operator, Types, Universal, Existential, Delimiters, Set
 from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern, get_indexes_blocks
 from MODULES.GENERATOR.Individual import Individual
-from MODULES.GENERATOR.auxiliary import Evaluate
+from MODULES.GENERATOR.auxiliary import Evaluate, Substitute
 from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 
 import numpy as np
@@ -337,7 +337,7 @@ class GeneticAlgorithm:
         error = 0.0
         for i in range(len(names)):
             for atomicp in groups[names[i]]:
-                atomicp = Evaluate().substitute_values(atomicp, variables, fenotype)
+                atomicp = Substitute().substitute_values(atomicp, variables, fenotype)
                 error += functions[i](atomicp)
         return error
 

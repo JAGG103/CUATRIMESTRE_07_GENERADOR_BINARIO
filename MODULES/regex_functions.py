@@ -60,7 +60,10 @@ def indexes_avoiding_head_and_tail(patternhead:list, patterntail:list, pattern:s
                 break
         if(not cond):
             target.append((i,s))
-    return target
+    if(target == []):
+        return None
+    else:
+        return target
 
 
 def get_elements_notin_indexes(indexes:list[tuple],string:str)->list:

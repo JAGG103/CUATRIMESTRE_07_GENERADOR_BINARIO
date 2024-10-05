@@ -65,7 +65,7 @@ class Operator:
             raise ValueError("Error: opción no valida {'logic', 'set', 'relational'}")
 
 class Delimiters:
-    __slots__ = ('_evaluation','evaluation_','_disyuntos','disyuntos_','_domain','domain_','middle')
+    __slots__ = ('_evaluation','evaluation_','_disyuntos','disyuntos_','_domain','domain_','suchthat','to')
     def __init__(self, option):
         if(option == 'evaluation'):
             self._evaluation = r"(?<!')\{(?!')"
@@ -76,8 +76,10 @@ class Delimiters:
         elif(option == 'domain'):
             self._domain = r"(?<!')\[(?!')"
             self.domain_ = r"(?<!')\](?!')"
-        elif(option == 'middleQuan'):
-            self.middle = r"(?<!')\s*\|\s*(?!')"
+        elif(option == 'such that'):
+            self.suchthat = r"(?<!')\s*\|\s*(?!')"
+        elif(option == 'to'):
+            self.to = r"\.{3}"
 
 class Mutations:
     __slots__ = ('less','equal','greater')
