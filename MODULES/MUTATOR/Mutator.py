@@ -35,11 +35,11 @@ class Mutator:
                     indexes_le = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.le_, targetConditions[it][i])
                     indexes_ge = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.ge_, targetConditions[it][i])
                     indexes_ne = indexes_avoiding_head_and_tail([delimiter._evaluation],[delimiter.evaluation_], relational.inequality_, targetConditions[it][i])
-                    if(len(indexes_le)!=0):
+                    if(indexes_le):
                         extDict = self.extend_set_of_predicates(targetConditions[it], fixedConditions[it], i, indexes_le, mutation.less, mutation.equal)
-                    elif(len(indexes_ge)!=0):
+                    elif(indexes_ge):
                         extDict = self.extend_set_of_predicates(targetConditions[it], fixedConditions[it], i, indexes_ge, mutation.greater, mutation.equal)
-                    elif(len(indexes_ne)!=0):
+                    elif(indexes_ne):
                         extDict = self.extend_set_of_predicates(targetConditions[it], fixedConditions[it], i, indexes_ne, mutation.greater, mutation.less)
                     else:
                         pass

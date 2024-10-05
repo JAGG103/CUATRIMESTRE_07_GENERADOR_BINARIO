@@ -1,7 +1,7 @@
 from MODULES.regex_patterns import Operator, Types, Universal, Existential, Delimiters, Set
-from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern, get_indexes_blocks
+from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern
 from MODULES.GENERATOR.Individual import Individual
-from MODULES.GENERATOR.auxiliary import Evaluate, Substitute
+from MODULES.GENERATOR.auxiliary import Evaluate, Substitute, Quantifiers
 from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 
 import numpy as np
@@ -153,182 +153,18 @@ class GeneticAlgorithm:
 
     def get_error_universal(self, atomic:str):
         # forall[ domain ] | P() <o> P() <o> ... <o> P().
-        pmiddle = Delimiters('middleQuan').middle
-        pforall = Universal('generation')
-        op = Operator('logic')
-        sett = Set()
-        AND,OR,NAO = 0,1,2
-        DNU,DEL,DIN = 0,1,2
-        operador = None
-        domaintype = None
-        atoms = list()
-
-        # Contenido
-        inds = get_indexes(pmiddle, atomic)
-        content = atomic[inds[0][1]:-1]
-        inds_and = get_indexes(op.and_, content)
-        inds_or = get_indexes(op.or_, content)
-        if(inds_and):
-            operador = AND
-            atoms = split_with_pattern(op.and_, content)
-        elif(inds_or):
-            operador = OR
-            atoms = split_with_pattern(op.or_, content)
-        else:
-            operador = NAO
-            atoms += [content]
-        
-        # iterable variable
-        content = atomic[:inds[0][0]]
-        inds = get_indexes(pforall.iterv, content)
-        iterv = content[inds[0][0]:inds[0][1]]
-        iterv = rf'\b{iterv}\b'
-        # dominio
-        inds_domnum = get_indexes_blocks(content, pforall._domainnum, pforall.domainnum_)
-        inds_domele = get_indexes_blocks(content, pforall._domainelems, pforall.domainelems_)
-        inds_domind = get_indexes_blocks(content, pforall._domaininds, pforall.domaininds_)
-        if(inds_domnum):
-            domain = content[inds_domnum[0][0]+1:inds_domnum[0][1]-1]
-            start, end = split_with_pattern('(\.\.\.)', domain)
-            domaintype = DNU
-        elif(inds_domele):
-            domain = content[inds_domele[0][0]+len('elems('):inds_domele[0][1]-len(')')]
-            start, end = '0',f'len({domain})'
-            domaintype = DEL
-        elif(inds_domind):
-            domain = content[inds_domind[0][0]+len('inds('):inds_domind[0][1]-len(')')]
-            start, end = '0',f'len({domain})'
-            domaintype = DIN
-        else:
-            raise ValueError("Dominios invalidos en cuantificador universal")
-
-        # Sustitución
-        accumerr = 0.0
-        accumerrls = []
-        functions = [self.get_error_set, self.get_error_relational]
-        SET,REL = 0,1
-        aux = None
-        start = start.replace("\\", "\\\\")
-        end = end.replace("\\", "\\\\")
-        for i in range(eval(start), eval(end)):
-            errormin = float("inf")
-            for atom in atoms:
-                inds = get_indexes(sett.in_ + r'|' + sett.not_, atom)
-                if(inds):
-                    aux = SET
-                else:
-                    aux = REL
-                if(domaintype in {DNU, DIN}):
-                    element = str(i)
-                else:
-                    element = f"{domain}[{i}]"
-                atom = replace_pattern(iterv, element, atom)
-                if(operador == AND):
-                    error = functions[aux](atom)
-                    accumerr += error
-                elif(operador == OR):
-                    error = functions[aux](atom)
-                    if(error<errormin):
-                        errormin = error
-                else:
-                    error = functions[aux](atom)
-                    accumerr += error
-            if(operador==OR):
-                accumerrls += [errormin]
-        if(operador==OR):
-            return max(accumerrls)
-        else:
-            return accumerr
-
+        AND, OR, NONE = (1,2,3)
+        FORALL, EXISTS = (1,2)
+        universal = Quantifiers(atomic,FORALL)
+        errors = self.auxiliary_quantifier_error(universal)
+        return sum(errors) if universal.operator in {AND, NONE} else max(errors)
             
     def get_error_existential(self, atomic:str):
         # exists[ domain ] | P() <o> P() <o> ... <o> P().
-        pmiddle = Delimiters('middleQuan').middle
-        pexists = Existential('generation')
-        op = Operator('logic')
-        sett = Set()
-        AND,OR,NAO = 0,1,2
-        DNU,DEL,DIN = 0,1,2
-        operador = None
-        domaintype = None
-        atoms = list()
-
-        # Contenido
-        inds = get_indexes(pmiddle, atomic)
-        content = atomic[inds[0][1]:-1]
-        inds_and = get_indexes(op.and_, content)
-        inds_or = get_indexes(op.or_, content)
-        if(inds_and):
-            operador = AND
-            atoms = split_with_pattern(op.and_, content)
-        elif(inds_or):
-            operador = OR
-            atoms = split_with_pattern(op.or_, content)
-        else:
-            operador = NAO
-            atoms += [content]
-        
-        # iterable variable
-        content = atomic[:inds[0][0]]
-        inds = get_indexes(pexists.iterv, content)
-        iterv = content[inds[0][0]:inds[0][1]]
-        iterv = rf'\b{iterv}\b'
-        # dominio
-        inds_domnum = get_indexes_blocks(content, pexists._domainnum, pexists.domainnum_)
-        inds_domele = get_indexes_blocks(content, pexists._domainelems, pexists.domainelems_)
-        inds_domind = get_indexes_blocks(content, pexists._domaininds, pexists.domaininds_)
-        if(inds_domnum):
-            domain = content[inds_domnum[0][0]+1:inds_domnum[0][1]-1]
-            start, end = split_with_pattern('(\.\.\.)', domain)
-            domaintype = DNU
-        elif(inds_domele):
-            domain = content[inds_domele[0][0]+len('elems('):inds_domele[0][1]-len(')')]
-            start, end = '0',f'len({domain})'
-            domaintype = DEL
-        elif(inds_domind):
-            domain = content[inds_domind[0][0]+len('inds('):inds_domind[0][1]-len(')')]
-            start, end = '0',f'len({domain})'
-            domaintype = DIN
-        else:
-            raise ValueError("Dominios invalidos en cuantificador existencial")
-
-        # Sustitución
-        accumerr = 0.0
-        accumerrls = []
-        functions = [self.get_error_set, self.get_error_relational]
-        SET,REL = 0,1
-        aux = None
-        start = start.replace("\\", "\\\\")
-        end = end.replace("\\", "\\\\")
-        for i in range(eval(start), eval(end)):
-            errormin = float("inf")
-            accumerr = 0.0
-            for atom in atoms:
-                inds = get_indexes(sett.in_ + r'|' + sett.not_, atom)
-                if(inds):
-                    aux = SET
-                else:
-                    aux = REL
-                if(domaintype in {DNU, DIN}):
-                    element = str(i)
-                else:
-                    element = f"{domain}[{i}]"
-                atom = replace_pattern(iterv, element, atom)
-                if(operador == AND):
-                    error = functions[aux](atom)
-                    accumerr += error
-                elif(operador == OR):
-                    error = functions[aux](atom)
-                    if(error<errormin):
-                        errormin = error
-                else:
-                    error = functions[aux](atom)
-                    accumerr += error
-            if(operador==OR):
-                accumerrls += [errormin]
-            else:
-                accumerrls += [accumerr]
-        return min(accumerrls)
+        FORALL, EXISTS = (1,2)
+        existential = Quantifiers(atomic,EXISTS)
+        errors = self.auxiliary_quantifier_error(existential)
+        return min(errors)
 
 
     def error_function(self, groups:dict, variables:list, fenotype:list):
@@ -363,6 +199,25 @@ class GeneticAlgorithm:
                         raise ValueError("No es una asignación")
         return lenghts
                         
-            
+    def auxiliary_quantifier_error(self,quantifier:Quantifiers)->list:
+        inset = Set().in_
+        notint = Set().not_
+        DNUM, DELEM, DINDS = (1,2,3)
+        AND, OR, NONE = (1,2,3)
+        functions = [self.get_error_set, self.get_error_relational]
+        SET,REL = [0,1]
+        start = eval(quantifier.start.replace("\\", "\\\\"))
+        end = eval(quantifier.end.replace("\\", "\\\\"))
+        errors = list()
+        for i in range(start, end):
+            errors_ = list()
+            element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
+            for atom in quantifier.atoms:
+                funcinds = SET if get_indexes(inset+'|'+notint, atom) else REL
+                atom = replace_pattern(quantifier.iterv, element, atom)
+                error = functions[funcinds](atom)
+                errors_ += [error]
+            errors.append(sum(errors_) if quantifier.operator in {AND, NONE} else min(errors_))
+        return errors
 
 

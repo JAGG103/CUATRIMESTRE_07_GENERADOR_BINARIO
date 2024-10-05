@@ -97,7 +97,7 @@ class Coding:
 class Quantifiers:
     __slots__ = ('atoms','operator','iterv','domain','domtype','start','end')
     def __init__(self, predicate:str, target:int):
-        FORALL,EXISTS = (0,1)
+        FORALL,EXISTS = (1,2)
         if(target == FORALL):
             self.extract_information(predicate, Universal('generation'))
         elif(target == EXISTS):
@@ -115,8 +115,8 @@ class Quantifiers:
         inds = get_indexes(suchthat, atomic)
         # Contenido
         content = atomic[inds[0][1]:-1]
-        inds_and = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.and_,content), AND
-        inds_or = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.or_,content), OR
+        inds_and = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.and_,content)
+        inds_or = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.or_,content)
         if(inds_and):
             atoms, operator = get_elements_notin_indexes(inds_and, content), AND
         elif(inds_or):
@@ -155,14 +155,17 @@ class Quantifiers:
         self.end = end
 
 class Substitute:
-    def substitute_dict(values:dict, predicate:str):
+    def __init__(self):
+        pass
+
+    def substitute_dict(self, values:dict, predicate:str):
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
             if(get_indexes(pattern, predicate)):
                 atom = replace_pattern(pattern, str(values[variable]), atom)
         return atom
 
-    def substitute_values(predicate:str, variables:list, values:list) -> list:
+    def substitute_values(self, predicate:str, variables:list, values:list) -> list:
         # Función que toma un predicado atomico y substituye las variables en el
         # Con sus valores generados presentes la variable "chromosoma"
         # donde cada elemento del cromosoma es un valor generador para
@@ -170,10 +173,13 @@ class Substitute:
         for i in range(len(variables)):
             pattern = rf"\b{variables[i]}\b"
             if(get_indexes(pattern, predicate)):
-                atomicp = replace_pattern(pattern, str(values[i]), predicate)
+                predicate = replace_pattern(pattern, str(values[i]), predicate)
         return predicate
 
 class Evaluate:
+    def __init__(self):
+        pass
+    
     def relational(self, left:str, right:str, operator:str):
         # Funcion que permite evaluar una expresión relacional y 
         # regresa un error. La parte izquiera y derecha de la expresión
