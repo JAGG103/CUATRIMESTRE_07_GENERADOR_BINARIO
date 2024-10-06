@@ -118,6 +118,8 @@ class Existential:
     def __init__(self, option:str):
         if(option == 'generation'):
             self.pattern = r'\bexists\b\[[^\]]+\]\s*\|\s*[^\}\.]+\.'
+        elif(option == 'evaluation'):
+            self.pattern = r'\bexists\b\[[^\]]+\]\s*\|\s*[^\.]+\.'
         else:
             raise ValueError("Pattern Existential")
         self._domainnum = r"(?<!')\{(?<!')"

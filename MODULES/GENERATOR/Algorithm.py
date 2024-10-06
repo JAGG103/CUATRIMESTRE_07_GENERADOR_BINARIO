@@ -1,38 +1,31 @@
 from MODULES.GENERATOR.GeneticAlgorithm import GeneticAlgorithm
-from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
+from MODULES.GENERATOR.EvaluationAlgorithm import EvaluationAlgorithm
 # Aqui se trabajara con el algoritmo genético y algoritmo evaluador
+from MODULES.GENERATOR.auxiliary import Substitute, Assignments
+
 
 class Algorithm:
 
-    def __init__(self, parameters:dict, inport:dict, inaux:dict, outport:dict, outaux:dict, init:dict, testconditions:list[dict], defconditions:list[dict]):
-        self.testcases = []
-        self.main(parameters, inport, inaux, outport, outaux, init, testconditions, defconditions)
+    def __init__(self, parameters:dict, port:dict, init:dict, condition:dict):
+        self.main(parameters, port, init, condition)
 
-    def main(self, parameters:dict, inport:dict, inaux:dict, outport:dict, outaux:dict, init:dict, testconditions:list[dict], defconditions:list[dict]):
-        for testcondition,defcondition in zip(testconditions, defconditions):
-            tries = 0
-            tc = []
-            dc = []
-            variablesI = inport['variables'] + inaux['variables']
-            typesI = inport['types'] + inaux['types']
-            variablesO = outport['variables'] + outaux['variables']
-            typesO = outport['types'] + outaux['types']
-            print(testcondition)
-            print(defcondition)
+    def main(self, parameters, port, init, condition):
+        values = dict()
+        # Resolver asignaciones
+        values = Assignments().assignments(port['variables'],port['types'], condition['relational'])
+        # Sustituir valores de las asignaciones
+        for key in condition.keys():
+            condition[key] = [Substitute().substitute_dict(values, predicate) for predicate in condition[key]]
+        # Extraer las evaluaciones y dejar los demas grupos
+        evaluations = condition['universal evaluation'].copy()
+        del evaluations['universal evaluation']
 
-            while(tries < parameters['tries']):
-                try:
-                    # testvalues = GeneticAlgorithm(parameters, variablesI, typesI, testcondition)
-                    # tc.append(testvalues.solution)
+        # Algoritmo genetico
+        aux = [(v,t) for v,t in zip(port['variables'],port['types']) if v not in values.keys()]
+        variables,types = [e[0] for e in aux],[[e[1] for e in aux]]
+        ga = GeneticAlgorithm(parameters, variables, types, condition)
+        values.update(ga.solutiondict)
 
-                    testvalues = GeneticAlgorithm(parameters, variablesO, typesO, defcondition)
-                    tc.append(testvalues.solution)
-                    break
-                except UnoptimalIndividual:
-                    print(f"Intento: {tries}")
-                    tries += 1
-        self.testcases.append(tc)
-        self.testcases.append(dc)
-            
-
-            
+        # Algoritmo evaluador de condiciones
+        evaluations = [Substitute().substitute_dict(values, predicate) for predicate in evaluations]
+        ea = EvaluationAlgorithm(evaluations, init)

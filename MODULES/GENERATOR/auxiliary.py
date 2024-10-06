@@ -1,5 +1,5 @@
 from MODULES.regex_functions import get_indexes, replace_pattern, split_with_pattern, get_indexes_blocks, indexes_avoiding_head_and_tail, get_elements_notin_indexes
-from MODULES.regex_patterns import Operator, Delimiters, Universal, Existential, Set
+from MODULES.regex_patterns import Operator, Delimiters, Universal, Existential, Types
 
 from fxpmath import Fxp
 import random
@@ -162,10 +162,10 @@ class Substitute:
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
             if(get_indexes(pattern, predicate)):
-                atom = replace_pattern(pattern, str(values[variable]), atom)
-        return atom
+                predicate = replace_pattern(pattern, str(values[variable]), predicate)
+        return predicate
 
-    def substitute_values(self, predicate:str, variables:list, values:list) -> list:
+    def substitute_values(self, predicate:str, variables:list, seqofvalues:list) -> list:
         # Función que toma un predicado atomico y substituye las variables en el
         # Con sus valores generados presentes la variable "chromosoma"
         # donde cada elemento del cromosoma es un valor generador para
@@ -173,7 +173,7 @@ class Substitute:
         for i in range(len(variables)):
             pattern = rf"\b{variables[i]}\b"
             if(get_indexes(pattern, predicate)):
-                predicate = replace_pattern(pattern, str(values[i]), predicate)
+                predicate = replace_pattern(pattern, str(seqofvalues[i]), predicate)
         return predicate
 
 class Evaluate:
@@ -240,5 +240,45 @@ class Evaluate:
         else:
             raise ValueError("Operador invalido")
         
-        
-        
+class Assignments:
+    __slots__ = ('equality')
+    def __init__(self):
+        self.equality = Operator('relational').equality_
+
+    def assignments(self, variables:list, types:list, atoms:list) -> dict:
+        atoms_ = []
+        values = dict()
+        typeobj = Types()
+        for atom in atoms:
+            if(self.isvalid_assigment(variables, atom)):
+                inds = get_indexes(self.equality, atom)
+                variable = atom[:inds[0][0]]
+                value = atom[inds[0][1]:]
+                for v,t in zip(variables,types):                    
+                    if(v==variable):
+                        if(get_indexes(typeobj.int+'|'+typeobj.nat+'|'+typeobj.nat0, t)):
+                            values[variable] = int(eval(value))
+                        elif(v==variable and get_indexes(typeobj.real, t)):
+                            values[variable] = float(eval(value))
+                        else:
+                            values[variable] = eval(value)
+        atoms = atoms_.copy()
+        return values
+
+    def isvalid_assigment(self, variables:list, atom:str) -> bool:
+        valid, validleft, validright = (False, False, True)
+        inds = get_indexes(self.equality, atom)
+        if(inds):
+            left = atom[:inds[0][0]]
+            right = atom[inds[0][1]:]
+            for variable in variables:
+                pattern = fr"\b{variable}\b"
+                inds = get_indexes(pattern, left)
+                if(inds):
+                    left = left.replace(' ','')
+                    validleft = True if len(left)==(inds[0][1] - inds[0][0]) else validleft
+                else:
+                    validright = False if get_indexes(pattern, right) else validright
+            valid = True if validleft and validright else False
+        return valid
+

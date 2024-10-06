@@ -7,10 +7,10 @@ class Classificator:
         check = [Blocks('quantifiers')._forall, Blocks('quantifiers')._exists]
         check += [Operator('logic').or_, Operator('logic').implies_]
         patterns = [Functions('len').len]
-        patterns += [Universal('generation').pattern, Existential('generation').pattern, Universal('evaluation').pattern]
+        patterns += [Universal('generation').pattern, Existential('generation').pattern, Universal('evaluation').pattern, Existential('evaluation').pattern]
         patterns += [Set().in_ + '|' + Set().not_]
         names =  ['func len']
-        names += ['universal generation','existential generation','universal evaluation']
+        names += ['universal generation','existential generation','universal evaluation','existential evaluation']
         names += ['set','relational']
 
         self.testConditions, self.defConditions = self.main(testConditions, defConditions, patterns, check, names)
