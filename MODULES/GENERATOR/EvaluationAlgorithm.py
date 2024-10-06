@@ -36,6 +36,7 @@ class EvaluationAlgorithm:
 
 
     def auxiliary_quantifiers(self, quantifier:Quantifiers, globvars:list, OPTION:int):
+        # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
         AND, OR, NONE = (1,2,3)
         DNUM, DELEM, DINDS = (1,2,3)
         SET,REL = [0,1]
@@ -81,6 +82,7 @@ class EvaluationAlgorithm:
 
 
     def auxiliary_evaluations(self, efect:str, globvars:list, errors:list, OPTION:int):
+        # Función que permite modificar los valores de las variables globales dentro de las evaluaciones
         FORALL,EXISTS = (1,2)
         if(OPTION == FORALL):
             executions = errors.count(0.0)

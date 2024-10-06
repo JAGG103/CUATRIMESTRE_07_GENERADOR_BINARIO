@@ -158,7 +158,7 @@ class Substitute:
     def __init__(self):
         pass
 
-    def substitute_dict(self, values:dict, predicate:str):
+    def substitute_dict(self, values:dict, predicate:str)->str:
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
             if(get_indexes(pattern, predicate)):

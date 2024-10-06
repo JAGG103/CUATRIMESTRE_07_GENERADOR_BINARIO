@@ -3,29 +3,44 @@ from MODULES.GENERATOR.EvaluationAlgorithm import EvaluationAlgorithm
 # Aqui se trabajara con el algoritmo genético y algoritmo evaluador
 from MODULES.GENERATOR.auxiliary import Substitute, Assignments
 
+import copy
 
 class Algorithm:
-
+    __slots__ = ('init_', 'values')
     def __init__(self, parameters:dict, port:dict, init:dict, condition:dict):
-        self.main(parameters, port, init, condition)
+        if(port['variables']==[] and port['types']==[]):
+            self.init_ = init
+            self.values = dict()
+        else:
+            self.main(parameters, port, init, condition)
 
     def main(self, parameters, port, init, condition):
         values = dict()
+        evaluations = dict()
         # Resolver asignaciones
         values = Assignments().assignments(port['variables'],port['types'], condition['relational'])
+
         # Sustituir valores de las asignaciones
         for key in condition.keys():
             condition[key] = [Substitute().substitute_dict(values, predicate) for predicate in condition[key]]
+
         # Extraer las evaluaciones y dejar los demas grupos
-        evaluations = condition['universal evaluation'].copy()
-        del evaluations['universal evaluation']
+        for name in ['universal evaluation','existential evaluation']:
+            evaluations[name] = condition[name].copy()
+            del condition[name]
 
         # Algoritmo genetico
         aux = [(v,t) for v,t in zip(port['variables'],port['types']) if v not in values.keys()]
-        variables,types = [e[0] for e in aux],[[e[1] for e in aux]]
+        variables,types = [e[0] for e in aux],[e[1] for e in aux]
         ga = GeneticAlgorithm(parameters, variables, types, condition)
         values.update(ga.solutiondict)
 
         # Algoritmo evaluador de condiciones
-        evaluations = [Substitute().substitute_dict(values, predicate) for predicate in evaluations]
+        for key in evaluations.keys():
+            evaluations[key] = [Substitute().substitute_dict(values, predicate) for predicate in evaluations[key]]
         ea = EvaluationAlgorithm(evaluations, init)
+
+        # Regresar valores
+        self.init_ = ea.init_
+        self.values = values
+
