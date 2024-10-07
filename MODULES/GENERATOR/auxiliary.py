@@ -189,14 +189,17 @@ class Evaluate:
         # no contienen variables.
         op = Operator('relational')
         try:
-            left = float(eval(left))
-            right = float(eval(right))
+            leftaux = float(eval(left.replace('\\','\\\\')))
+            rightaux = float(eval(right.replace('\\','\\\\')))
         except ZeroDivisionError:
             error = 100.0
             return error
         except ValueError:
-            left = eval(left)
-            right = eval(right)
+            leftaux = eval(left.replace('\\','\\\\'))
+            rightaux = eval(right.replace('\\','\\\\'))
+        
+        left = leftaux
+        right = rightaux
 
         tleft = type(left)
         tright = type(right)
@@ -211,7 +214,7 @@ class Evaluate:
             else:
                 raise ValueError("Invalid Operator")
         elif(tleft==tright and tleft==str):
-            comparison = eval(f'"{left}"=="{right}"')
+            comparison = eval(f'"{left}"=="{right}"'.replace('\\','\\\\'))
             error = 0 if comparison else 1
         else:
             comparison = eval(f"{left}=={right}")

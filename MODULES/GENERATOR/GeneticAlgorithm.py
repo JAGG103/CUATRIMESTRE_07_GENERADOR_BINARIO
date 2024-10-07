@@ -1,4 +1,4 @@
-from MODULES.regex_patterns import Operator, Types, Universal, Existential, Delimiters, Set
+from MODULES.regex_patterns import Operator, Types, Set
 from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern
 from MODULES.GENERATOR.Individual import Individual
 from MODULES.GENERATOR.auxiliary import Evaluate, Substitute, Quantifiers
@@ -102,7 +102,10 @@ class GeneticAlgorithm:
         indbest = -1
         for i in range(len(population)):
             individual = population[i]
-            error = self.error_function(group, variables, individual.fenotype)
+            try:
+                error = self.error_function(group, variables, individual.fenotype)
+            except Exception:
+                raise UnoptimalIndividual(f"{individual.fenotype}")
             fitness = 1/(error+1)
             if(fitness>maxfitness):
                 maxfitness = fitness

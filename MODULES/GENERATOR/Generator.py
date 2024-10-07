@@ -70,7 +70,7 @@ class Generator:
                     tcs += [(list((testvalues, expectedvalues)))]
                     testcase_suite += [tcs]
                     break
-                except UnoptimalIndividual:
+                except TypeError: # Unoptimal
                     attempt += 1
                     print(f"attempt: {attempt}")
             
