@@ -10,7 +10,7 @@ from copy import deepcopy
 class GeneticAlgorithm:
     __slots__ = ('N_WORDS','solution','solutiondict')
     def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
-        self.N_WORDS = {'real':32,'int':13,'nat':12,'char':7}
+        self.N_WORDS = {'real':32,'int':13,'nat':12, 'nat0':12, 'char':7}
         self.solution = self.generate(parameters, variables, types, condition)
         self.solutiondict = {i:j for i,j in zip(variables, self.solution)}
 

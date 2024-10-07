@@ -95,8 +95,11 @@ class Analyzer:
         inds = get_indexes(specification.pre, line)
         line = line[inds[0][1]:]
         inds = indexes_avoiding_head_and_tail([quan._forall,quan._exists],[quan.forall_,quan.exists_],logic.and_,line)
-        if(inds):
+        if(line != ''):
+            self.prels = [line]
+        elif(inds):
             self.prels = get_elements_notin_indexes(inds, line)
+        
             
     def return_post(self, line:str):
         inds = get_indexes(Specification('keys').post, line)

@@ -17,22 +17,23 @@ class Algorithm:
     def main(self, parameters, port, init, condition):
         values = dict()
         evaluations = dict()
+        condition_ = copy.deepcopy(condition)
         # Resolver asignaciones
-        values = Assignments().assignments(port['variables'],port['types'], condition['relational'])
+        values = Assignments().assignments(port['variables'],port['types'], condition_['relational'])
 
         # Sustituir valores de las asignaciones
-        for key in condition.keys():
-            condition[key] = [Substitute().substitute_dict(values, predicate) for predicate in condition[key]]
+        for key in condition_.keys():
+            condition_[key] = [Substitute().substitute_dict(values, predicate) for predicate in condition_[key]]
 
         # Extraer las evaluaciones y dejar los demas grupos
         for name in ['universal evaluation','existential evaluation']:
-            evaluations[name] = condition[name].copy()
-            del condition[name]
+            evaluations[name] = condition_[name].copy()
+            del condition_[name]
 
         # Algoritmo genetico
         aux = [(v,t) for v,t in zip(port['variables'],port['types']) if v not in values.keys()]
         variables,types = [e[0] for e in aux],[e[1] for e in aux]
-        ga = GeneticAlgorithm(parameters, variables, types, condition)
+        ga = GeneticAlgorithm(parameters, variables, types, condition_)
         values.update(ga.solutiondict)
 
         # Algoritmo evaluador de condiciones

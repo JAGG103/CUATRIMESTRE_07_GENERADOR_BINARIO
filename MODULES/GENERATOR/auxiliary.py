@@ -162,7 +162,10 @@ class Substitute:
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
             if(get_indexes(pattern, predicate)):
-                predicate = replace_pattern(pattern, str(values[variable]), predicate)
+                element = values[variable]
+                telement = type(element)
+                element = str(f'"{element}"') if telement==str else str(f"{element}")
+                predicate = replace_pattern(pattern, element, predicate)
         return predicate
 
     def substitute_values(self, predicate:str, variables:list, seqofvalues:list) -> list:
@@ -191,15 +194,29 @@ class Evaluate:
         except ZeroDivisionError:
             error = 100.0
             return error
-        indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
-        if(indsgreat or indsless or indseq):
-            diff = left - right
-            if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and (diff==0 or math.isclose(diff,0.0,abs_tol=0.00001))):
-                error = 0.0
+        except ValueError:
+            left = eval(left)
+            right = eval(right)
+
+        tleft = type(left)
+        tright = type(right)
+        if(tleft==tright and tleft==float):
+            indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
+            if(indsgreat or indsless or indseq):
+                diff = left - right
+                if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and (diff==0 or math.isclose(diff,0.0,abs_tol=0.00001))):
+                    error = 0.0
+                else:
+                    error = 1 if diff==0.0 else abs(diff)
             else:
-                error = abs(diff)
+                raise ValueError("Invalid Operator")
+        elif(tleft==tright and tleft==str):
+            comparison = eval(f'"{left}"=="{right}"')
+            error = 0 if comparison else 1
         else:
-            raise ValueError("Invalid Operator")
+            comparison = eval(f"{left}=={right}")
+            error = 0 if comparison else 1
+            
         return error
 
     def set(self, left:str, right:str, operator:str):
@@ -258,7 +275,7 @@ class Assignments:
                     if(v==variable):
                         if(get_indexes(typeobj.int+'|'+typeobj.nat+'|'+typeobj.nat0, t)):
                             values[variable] = int(eval(value))
-                        elif(v==variable and get_indexes(typeobj.real, t)):
+                        elif(get_indexes(typeobj.real, t)):
                             values[variable] = float(eval(value))
                         else:
                             values[variable] = eval(value)

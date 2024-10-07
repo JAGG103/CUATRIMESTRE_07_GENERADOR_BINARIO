@@ -56,11 +56,11 @@ class Operator:
             self.notin_ = r'\s+notin\s+'
         elif(option in {'relational'}):
             self.equality_ = r"(?<!')\s*=\s*(?!')"
-            self.inequality_ = r"(?<!')\s*<>\*"
+            self.inequality_ = r"(?<!')\s*<>\s*(?<!')"
             self.le_ = r"(?<!')\s*<=\s*(?!')"
             self.ge_ = r"(?<!')\s*>=\s*(?!')"
-            self.less_ = r"(?<!')\s*<\s*(?!')"
-            self.greater_ = r"(?<!')\s*>\s*(?!')"
+            self.less_ = r"(?<!')\s*<\s*(?!['>])"
+            self.greater_ = r"(?<!['<])\s*>\s*(?!')"
         else:
             raise ValueError("Error: opción no valida {'logic', 'set', 'relational'}")
 
