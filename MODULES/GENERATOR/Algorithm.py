@@ -18,6 +18,10 @@ class Algorithm:
         values = dict()
         evaluations = dict()
         condition_ = copy.deepcopy(condition)
+        # Sustituir init en los predicados
+        for key in condition_.keys():
+            condition_[key] = [Substitute().substitute_pattern_notinside(init, predicate) for predicate in condition_[key]]
+
         # Resolver asignaciones
         values = Assignments().assignments(port['variables'],port['types'], condition_['relational'])
 
@@ -33,9 +37,10 @@ class Algorithm:
         # Algoritmo genetico
         aux = [(v,t) for v,t in zip(port['variables'],port['types']) if v not in values.keys()]
         variables,types = [e[0] for e in aux],[e[1] for e in aux]
-        ga = GeneticAlgorithm(parameters, variables, types, condition_)
-        values.update(ga.solutiondict)
-
+        if(variables!=[] and types != []):
+            ga = GeneticAlgorithm(parameters, variables, types, condition_)
+            values.update(ga.solutiondict)
+        
         # Algoritmo evaluador de condiciones
         for key in evaluations.keys():
             evaluations[key] = [Substitute().substitute_dict(values, predicate) for predicate in evaluations[key]]

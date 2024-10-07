@@ -102,10 +102,7 @@ class GeneticAlgorithm:
         indbest = -1
         for i in range(len(population)):
             individual = population[i]
-            try:
-                error = self.error_function(group, variables, individual.fenotype)
-            except Exception:
-                raise UnoptimalIndividual(f"{individual.fenotype}")
+            error = self.error_function(group, variables, individual.fenotype)
             fitness = 1/(error+1)
             if(fitness>maxfitness):
                 maxfitness = fitness

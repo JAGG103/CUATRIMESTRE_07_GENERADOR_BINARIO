@@ -92,7 +92,7 @@ class Set:
     __slots__ = ('in_','not_')
     def __init__(self):
         op = Operator('set')
-        self.in_ = "[\w\d\[\]\.\(\)']+" + op.inset_ + "(\{)[^\}]+(\})|[\w]+(\s)+(inset)(\s)+(set\()[^\)]+(\))"
+        self.in_ = "[\w\d\[\]\.\(\)']+" + op.inset_ + "(\{)[^\}]+(\})|[\w\d\[\]]+(\s)+(inset)(\s)+(set\()[^\)]+(\))"
         self.not_ = "[\w\d\[\]\.\(\)']+" + op.notin_ + "(\{)[^\}]+(\})|[\w\d\[\]',]+(\s)+(notin)(\s)+(set\()[^\)]+(\))"
 
 

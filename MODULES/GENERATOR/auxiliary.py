@@ -127,7 +127,7 @@ class Quantifiers:
         content = atomic[:inds[0][0]]
         inds = get_indexes(quantifier.iterv, content)
         iterv = content[inds[0][0]:inds[0][1]]
-        iterv = rf'\b{iterv}\b'
+        iterv = rf"(?<!')\b{iterv}\b(?!')"
         # dominio
         inds_domnum = get_indexes_blocks(content, quantifier._domainnum, quantifier.domainnum_)
         inds_domelem = get_indexes_blocks(content, quantifier._domainelems, quantifier.domainelems_)
@@ -157,6 +157,15 @@ class Quantifiers:
 class Substitute:
     def __init__(self):
         pass
+
+    def substitute_pattern_notinside(self, values:dict, predicate:str):
+        for variable in values.keys():
+            pattern = rf'\b{variable}\b'
+            inds = indexes_avoiding_head_and_tail([r"(?<!')\{(?!')"],[r"(?<!')\}(?!')"], pattern, predicate)
+            if(inds):
+                for i,j in inds:
+                    predicate = predicate[:i] + str(values[variable]) + predicate[j:]
+        return predicate
 
     def substitute_dict(self, values:dict, predicate:str)->str:
         for variable in values.keys():
@@ -189,50 +198,35 @@ class Evaluate:
         # no contienen variables.
         op = Operator('relational')
         try:
-            leftaux = float(eval(left.replace('\\','\\\\')))
-            rightaux = float(eval(right.replace('\\','\\\\')))
+            left = float(eval(left))
+            right = float(eval(right))
         except ZeroDivisionError:
             error = 100.0
             return error
-        except ValueError:
-            leftaux = eval(left.replace('\\','\\\\'))
-            rightaux = eval(right.replace('\\','\\\\'))
-        
-        left = leftaux
-        right = rightaux
 
-        tleft = type(left)
-        tright = type(right)
-        if(tleft==tright and tleft==float):
-            indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
-            if(indsgreat or indsless or indseq):
-                diff = left - right
-                if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and (diff==0 or math.isclose(diff,0.0,abs_tol=0.00001))):
-                    error = 0.0
-                else:
-                    error = 1 if diff==0.0 else abs(diff)
+        indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
+        if(indsgreat or indsless or indseq):
+            diff = left - right
+            if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and (diff==0 or math.isclose(diff,0.0,abs_tol=0.00001))):
+                error = 0.0
             else:
-                raise ValueError("Invalid Operator")
-        elif(tleft==tright and tleft==str):
-            comparison = eval(f'"{left}"=="{right}"'.replace('\\','\\\\'))
-            error = 0 if comparison else 1
+                error = 1 if diff==0.0 else abs(diff)
         else:
-            comparison = eval(f"{left}=={right}")
-            error = 0 if comparison else 1
-            
+            raise ValueError("Invalid Operator")
+        
         return error
 
     def set(self, left:str, right:str, operator:str):
         op = Operator('set')
         errors = []
 
-        try:
-            left = eval(left.replace("\\", "\\\\"))
-            right = eval(right)
-            if(left==None):
-                raise TypeError
-        except TypeError:
+        # try:
+        left = eval(left.replace("\\", "\\\\"))
+        right = eval(right.replace("\\", "\\\\"))
+        if(left==None):
             return 200
+        # except TypeError:
+        #     return 200
         
         for element in right:
             error = 0.0
@@ -276,12 +270,17 @@ class Assignments:
                 value = atom[inds[0][1]:]
                 for v,t in zip(variables,types):                    
                     if(v==variable):
-                        if(get_indexes(typeobj.int+'|'+typeobj.nat+'|'+typeobj.nat0, t)):
+                        inds = get_indexes(typeobj.int+'|'+typeobj.nat+'|'+typeobj.nat0, t)
+                        indsreal = get_indexes(typeobj.real, t)
+                        indseq = get_indexes(typeobj.seqof, t)
+                        if(inds and indseq==None):
                             values[variable] = int(eval(value))
-                        elif(get_indexes(typeobj.real, t)):
+                        elif(indsreal and indseq==None):
                             values[variable] = float(eval(value))
                         else:
-                            values[variable] = eval(value)
+                            values[variable] = eval(value.replace('\\','\\\\'))
+            else:
+                atoms_ += [atom]
         atoms = atoms_.copy()
         return values
 
