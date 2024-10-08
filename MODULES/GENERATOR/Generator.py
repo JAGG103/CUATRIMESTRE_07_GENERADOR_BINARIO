@@ -8,13 +8,14 @@ from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 import copy
 
 class Generator:
-    __slots__ = ('testcase_suite')
+    __slots__ = ('testcase_suite','notsatinds')
     def __init__(self, parameters:dict, inport:dict, inaux:dict, outport:dict, outaux:dict, init:dict, testconditions:list[dict], defconditions:list[dict]):
         self.main(parameters, inport, inaux, outport, outaux, init, testconditions, defconditions)
 
     def main(self, parameters:dict, inport:dict, inaux:dict, outport:dict, outaux:dict, init:dict, testconditions:list[dict], defconditions:list[dict]):
         testcase_suite = list()
-
+        notsatinds = list()
+        inds = 0
         for testcondition,defcondition in zip(testconditions, defconditions):
             print(testcondition)
             print(defcondition)
@@ -64,17 +65,20 @@ class Generator:
                     # Guardando los casos de prueba generados
                     testvalues = self.valuesdict_turn_into_valueslist(values, variablesIn)
                     expectedvalues = self.valuesdict_turn_into_valueslist(values, variablesOut)
-                    tcs += [(list((testvalues, expectedvalues)))]
+                    tcs += [list((testvalues, expectedvalues))]
                     testvalues = self.valuesdict_turn_into_valuesdict(values, variablesIn)
                     expectedvalues = self.valuesdict_turn_into_valuesdict(values, variablesOut)
-                    tcs += [(list((testvalues, expectedvalues)))]
+                    tcs += [list((testvalues, expectedvalues))]
                     testcase_suite += [tcs]
                     break
                 except UnoptimalIndividual:
                     attempt += 1
+                    if(attempt >= parameters['tries']):
+                        notsatinds += [inds]
                     print(f"attempt: {attempt}")
-            
+            inds += 1
         self.testcase_suite = testcase_suite
+        self.notsatinds = notsatinds
     
     def get_predicates_using_variables(self, predicates:list, variables:list)->tuple[list,list]:
         # Funcion que extrae predicados de 'predicates' si estos contienen alguna variable de 'variables' y regresa la lista de predicados que las contiene, eliminando esos elementos de 'predicates'

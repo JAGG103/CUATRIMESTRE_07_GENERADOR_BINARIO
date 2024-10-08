@@ -134,4 +134,4 @@ class Functions:
     __slots__ = ('len')
     def __init__(self, option):
         if(option=='len'):
-            self.len = rf"len\([\w\d]+\){Operator('relational').equality_}[\d]+"
+            self.len = rf"len\([\w\d]+\){Operator('relational').equality_}[\d\w]+"
