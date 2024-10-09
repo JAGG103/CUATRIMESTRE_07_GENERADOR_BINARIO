@@ -15,27 +15,27 @@ class EvaluationAlgorithm:
         names = ['universal evaluation','existential evaluation']
         for i in range(len(names)):
             for predicate in evaluations[names[i]]:
-                functions[i](predicate, init.keys())
+                functions[i](predicate, init)
 
         for variable in init.keys():
             init[variable] = eval(variable)
         return init
     
 
-    def evaluate_existential(self, predicate:str, globvars:list):
+    def evaluate_existential(self, predicate:str, init_:dict):
         # Este operador realizara los efectos siempre que la causa se cumpla, el numero de veces que la implicación se cumpla
         FORALL,EXISTS = (1,2)
         existential = Quantifiers(predicate,EXISTS)
-        self.auxiliary_quantifiers(existential, globvars, EXISTS)
+        self.auxiliary_existential(existential, init_)
             
-    def evaluate_universal(self, predicate:str, globvars:list):
+    def evaluate_universal(self, predicate:str, init_:dict):
         # Este operador realizara el efecto una vez si se cumple el efecto.
         FORALL,EXISTS = (1,2)
         universal = Quantifiers(predicate,FORALL)
-        self.auxiliary_quantifiers(universal, globvars, FORALL)
+        self.auxiliary_universal(universal, init_,)
 
 
-    def auxiliary_quantifiers(self, quantifier:Quantifiers, globvars:list, OPTION:int):
+    def auxiliary_existential(self, quantifier:Quantifiers, init_:dict):
         # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
         AND, OR, NONE = (1,2,3)
         DNUM, DELEM, DINDS = (1,2,3)
@@ -78,19 +78,58 @@ class EvaluationAlgorithm:
                     error_ = Evaluate().relational(left, right, operator_) if option==REL else Evaluate().set(left, right, operator_)
                     errors_ += [error_] 
                 errors.append(sum(errors_) if operator in {AND, NONE} else min(errors_))
-            self.auxiliary_evaluations(efect, globvars, errors, OPTION)
+            error = min(errors)
+            self.auxiliary_evaluations(efect, init_.keys(), error)
 
 
-    def auxiliary_evaluations(self, efect:str, globvars:list, errors:list, OPTION:int):
+    def auxiliary_universal(self, quantifier:Quantifiers, init_:dict):
+        # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
+        AND, OR, NONE = (1,2,3)
+        DNUM, DELEM, DINDS = (1,2,3)
+        SET,REL = [0,1]
+        inset = Operator('set').inset_
+        notin = Operator('set').notin_
+
+        start = eval(quantifier.start)
+        end = eval(quantifier.end.replace("\\", "\\\\"))
+        errors = list()
+        # Iteración sobre los elementos del dominio
+        for i in range(start, end):
+            element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
+            # Iteración sobre los Conjuntivos (evaluaciones)
+            for atom in quantifier.atoms:
+                errors_ = list()
+                op = Operator('logic')
+                atom = atom[1:-1]
+                inds = get_indexes(op.implies_, atom)
+                causes = atom[:inds[0][0]]
+                efect = atom[inds[0][1]:]
+                inds_and = get_indexes(op.and_, causes)
+                inds_or = get_indexes(op.or_, causes)
+                if(inds_and):
+                    subatoms, operator = get_elements_notin_indexes(inds_and, causes), AND
+                elif(inds_or):
+                    subatoms, operator = get_elements_notin_indexes(inds_or, causes), OR
+                else:
+                    subatoms, operator = [causes], NONE
+                
+                for atom in subatoms:
+                    option = SET if get_indexes(inset+'|'+notin, atom) else REL
+                    atom = replace_pattern(quantifier.iterv, element, atom)
+                    opr, ops = Operator('relational'), Operator('set')
+                    pattern = rf"{opr.less_}|{opr.greater_}|{opr.equality_}|{ops.inset_}|{ops.notin_}"
+                    inds = get_indexes(pattern, atom)
+                    operator_ = atom[inds[0][0]:inds[0][1]]
+                    left, right = split_with_pattern(pattern, atom)
+                    error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==REL else Evaluate().set_eval(left, right, operator_, init_)
+                    errors_ += [error_]
+                error = sum(errors_) if operator in {AND, NONE} else min(errors_)
+                self.auxiliary_evaluations(efect, init_.keys(), error)
+
+
+    def auxiliary_evaluations(self, efect:str, globvars:list, error:float):
         # Función que permite modificar los valores de las variables globales dentro de las evaluaciones
-        FORALL,EXISTS = (1,2)
-        if(OPTION == FORALL):
-            executions = errors.count(0.0)
-        elif(OPTION == EXISTS):
-            executions = 1 if min(errors)==0.0 else 0
-        else:
-            raise ValueError(f"Opción invalida: {OPTION}")
-        for _ in range(executions):
+        if(error == 0.0):
             equality = Operator('relational').equality_
             left, right = split_with_pattern(equality, efect)
             for globvar in globvars:

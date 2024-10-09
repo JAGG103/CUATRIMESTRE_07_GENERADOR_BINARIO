@@ -219,15 +219,10 @@ class Evaluate:
     def set(self, left:str, right:str, operator:str):
         op = Operator('set')
         errors = []
-
-        # try:
         left = eval(left.replace("\\", "\\\\"))
         right = eval(right.replace("\\", "\\\\"))
         if(left==None):
             return 200
-        # except TypeError:
-        #     return 200
-        
         for element in right:
             error = 0.0
             for i,j in zip(left,element):
@@ -254,6 +249,18 @@ class Evaluate:
         else:
             raise ValueError("Operador invalido")
         
+    def relational_eval(self, left, right, operator, globvars):
+        for variable in globvars.keys():
+            globals()[variable] = globvars[variable]
+        error = self.relational(left, right, operator)
+        return error
+
+    def set_eval(self, left, right, operator, globvars):
+        for variable in globvars.keys():
+            globals()[variable] = globvars[variable]
+        error = self.set(left, right, operator)
+        return error
+
 class Assignments:
     __slots__ = ('equality')
     def __init__(self):
@@ -300,4 +307,5 @@ class Assignments:
                     validright = False if get_indexes(pattern, right) else validright
             valid = True if validleft and validright else False
         return valid
+
 
