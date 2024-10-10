@@ -12,8 +12,8 @@ class Mutator:
 
     def main(self):
         # Se extienden las condiciones de prueba manteniendo sus condiciones de definición originales
-        adjust = (2*len(self.precondition))-len(self.precondition)
-        #adjust = 0
+        #adjust = (2*len(self.precondition))-len(self.precondition)
+        adjust = 0
         self.extend_testconditions_defconditions(adjust, self.testConditions, self.defConditions)
         # Se extienden las condiciones de definición manteniendo sus condiciones de prueba originales
         adjust = 0

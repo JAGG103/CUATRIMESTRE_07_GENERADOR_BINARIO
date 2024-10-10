@@ -261,6 +261,21 @@ class Evaluate:
             globals()[variable] = globvars[variable]
         error = self.set(left, right, operator)
         return error
+    
+    def satisfiability_relational(self, atoms:list, values:dict):
+        error = 0.0
+        op = Operator('relational')
+        pattern = rf"{op.equality_}|{op.less_}|{op.greater_}"
+        for atom in atoms:
+            indexes = get_indexes(pattern, atom)
+            if(indexes):
+                operator = atom[indexes[0][0]:indexes[0][1]]
+                atom = Substitute().substitute_dict(values, atom)
+                left, right = split_with_pattern(pattern, atom)
+                error = Evaluate().relational(left, right, operator)
+                if(error>0.0):
+                    return error
+        return error
 
 class Assignments:
     __slots__ = ('equality')
@@ -268,6 +283,11 @@ class Assignments:
         self.equality = Operator('relational').equality_
 
     def assignments(self, variables:list, types:list, atoms:list) -> dict:
+        # Método que se encarga de iterar sobre una lista de predicados atomicos y evalua si son asignaciones validas
+        # Para que sea una asignación valida una variable debe de estar sola del lado izquiero de la igualdad y ninguna de las
+        # restantes debe de estar del lado derecho, este valor se guarda en values y el atomo no se considera para futuras generaciones.
+        # Puede suceder el caso de que dos asiganaciones esten en la lista, en este caso solo la primera sera considerada y
+        # los otros predicados que contengan asignación seran considerados para futuras evaluaciones
         atoms_ = []
         values = dict()
         typeobj = Types()
@@ -276,17 +296,20 @@ class Assignments:
                 inds = get_indexes(self.equality, atom)
                 variable = atom[:inds[0][0]]
                 value = atom[inds[0][1]:]
-                for v,t in zip(variables,types):                    
+                for v,t in zip(variables,types):      
                     if(v==variable):
-                        inds = get_indexes(typeobj.int+'|'+typeobj.nat+'|'+typeobj.nat0, t)
-                        indsreal = get_indexes(typeobj.real, t)
-                        indseq = get_indexes(typeobj.seqof, t)
-                        if(inds and indseq==None):
-                            values[variable] = int(eval(value))
-                        elif(indsreal and indseq==None):
-                            values[variable] = float(eval(value))
+                        if(v not in values):
+                            inds = get_indexes(typeobj.int+'|'+typeobj.nat+'|'+typeobj.nat0, t)
+                            indsreal = get_indexes(typeobj.real, t)
+                            indseq = get_indexes(typeobj.seqof, t)
+                            if(inds and indseq==None):
+                                values[variable] = int(eval(value))
+                            elif(indsreal and indseq==None):
+                                values[variable] = float(eval(value))
+                            else:
+                                values[variable] = eval(value.replace('\\','\\\\'))
                         else:
-                            values[variable] = eval(value.replace('\\','\\\\'))
+                            atoms_ += [atom]
             else:
                 atoms_ += [atom]
         return values,atoms_

@@ -1,7 +1,8 @@
 from MODULES.GENERATOR.GeneticAlgorithm import GeneticAlgorithm
 from MODULES.GENERATOR.EvaluationAlgorithm import EvaluationAlgorithm
-# Aqui se trabajara con el algoritmo genético y algoritmo evaluador
-from MODULES.GENERATOR.auxiliary import Substitute, Assignments
+from MODULES.GENERATOR.auxiliary import Substitute, Assignments, Evaluate
+
+from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 
 import copy
 
@@ -40,6 +41,11 @@ class Algorithm:
         if(variables!=[] and types != []):
             ga = GeneticAlgorithm(parameters, variables, types, condition_)
             values.update(ga.solutiondict)
+        
+        # Evaluando los predicados restantes evitando contradicciones con posibles asignaciones en predicados relacionales
+        error = Evaluate().satisfiability_relational(condition_['relational'], values)
+        if error > 0.0:
+            raise UnoptimalIndividual("Contradiccion en los predicados relacionales")
         
         # Algoritmo evaluador de condiciones
         for key in evaluations.keys():
