@@ -23,7 +23,7 @@ class Algorithm:
             condition_[key] = [Substitute().substitute_pattern_notinside(init, predicate) for predicate in condition_[key]]
 
         # Resolver asignaciones
-        values = Assignments().assignments(port['variables'],port['types'], condition_['relational'])
+        values,condition_['relational'] = Assignments().assignments(port['variables'],port['types'], condition_['relational'])
 
         # Sustituir valores de las asignaciones
         for key in condition_.keys():

@@ -225,17 +225,18 @@ class Evaluate:
             return 200
         for element in right:
             error = 0.0
-            for i,j in zip(left,element):
-                typei, typej = type(i),type(j)
-                if(typei==typej):
-                    if(typei == str):
+            typeelm = type(element)
+            typeleft = type(left)
+            if(typeelm == typeleft):
+                if(typeelm in {str}):
+                    for i,j in zip(left,element):
                         error += abs(ord(i)-ord(j))
-                    elif(typei in {int,float}):
-                        error += abs(i-j)
-                    else:
-                        raise ValueError("El tipo de elementos no es valido")
+                elif(typeelm in {int,float}):
+                    error += abs(left-element)
                 else:
-                    raise ValueError("Elementos a evaluar no son del mismo tipo")
+                    raise ValueError("Elementos a evaluar no son del mismo tipo {secuencias de caracteres y enteros/flotantes}")
+            else:
+                raise ValueError("Los elementos utilizados en el operador inset o notin no son del mismo tipo")
             errors.append(error)
         minimal = min(errors)
         indsin, indsnot = get_indexes(op.inset_, operator), get_indexes(op.notin_, operator)
@@ -288,8 +289,7 @@ class Assignments:
                             values[variable] = eval(value.replace('\\','\\\\'))
             else:
                 atoms_ += [atom]
-        atoms = atoms_.copy()
-        return values
+        return values,atoms_
 
     def isvalid_assigment(self, variables:list, atom:str) -> bool:
         valid, validleft, validright = (False, False, True)
