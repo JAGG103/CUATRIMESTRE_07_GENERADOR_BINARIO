@@ -138,7 +138,7 @@ class EvaluationAlgorithm:
                 inds_modvar = get_indexes(modvar, left)
                 inds_modele = get_indexes(modele, left)
                 if(inds_modvar):
-                    globals[globvar] = eval(right)
+                    globals()[globvar] = eval(right)
                 elif(inds_modele):
                     pinds = r"(?<=\[)\d+(?=\])"
                     inds = get_indexes(pinds, left)

@@ -208,6 +208,13 @@ class GeneticAlgorithm:
         SET,REL = [0,1]
         start = eval(quantifier.start.replace("\\", "\\\\"))
         end = eval(quantifier.end.replace("\\", "\\\\"))
+        
+        diff = end-start
+        if(diff == 0):
+            return [10]
+        elif(diff < 0):
+            return [10*abs(diff)]
+
         errors = list()
         for i in range(start, end):
             errors_ = list()
