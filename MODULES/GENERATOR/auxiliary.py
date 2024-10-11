@@ -221,11 +221,13 @@ class Evaluate:
         errors = []
         left = eval(left.replace("\\", "\\\\"))
         right = eval(right.replace("\\", "\\\\"))
-        if(left==None):
+        if(left==None or None in left):
             return 200
         for element in right:
             error = 0.0
             typeelm = type(element)
+            typeleft = type(left)
+            left = ''.join(left) if typeleft==list else left
             typeleft = type(left)
             if(typeelm == typeleft):
                 if(typeelm in {str}):
@@ -236,7 +238,7 @@ class Evaluate:
                 else:
                     raise ValueError("Elementos a evaluar no son del mismo tipo {secuencias de caracteres y enteros/flotantes}")
             else:
-                raise ValueError("Los elementos utilizados en el operador inset o notin no son del mismo tipo")
+                raise ValueError(f"Los elementos utilizados en el operador inset o notin no son del mismo tipo: {typeleft} {typeelm}")
             errors.append(error)
         minimal = min(errors)
         indsin, indsnot = get_indexes(op.inset_, operator), get_indexes(op.notin_, operator)
