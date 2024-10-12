@@ -221,7 +221,7 @@ class Evaluate:
         errors = []
         left = eval(left.replace("\\", "\\\\"))
         right = eval(right.replace("\\", "\\\\"))
-        if(left==None or None in left):
+        if(left==None or (type(left)==list and None in left)):
             return 200
         for element in right:
             error = 0.0
