@@ -92,7 +92,6 @@ class EvaluationAlgorithm:
 
         start = eval(quantifier.start)
         end = eval(quantifier.end.replace("\\", "\\\\"))
-        errors = list()
         # Iteración sobre los elementos del dominio
         for i in range(start, end):
             element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
@@ -112,19 +111,23 @@ class EvaluationAlgorithm:
                     subatoms, operator = get_elements_notin_indexes(inds_or, causes), OR
                 else:
                     subatoms, operator = [causes], NONE
-                
-                for atom in subatoms:
-                    option = SET if get_indexes(inset+'|'+notin, atom) else REL
-                    atom = replace_pattern(quantifier.iterv, element, atom)
-                    opr, ops = Operator('relational'), Operator('set')
-                    pattern = rf"{opr.less_}|{opr.greater_}|{opr.equality_}|{ops.inset_}|{ops.notin_}"
-                    inds = get_indexes(pattern, atom)
-                    operator_ = atom[inds[0][0]:inds[0][1]]
-                    left, right = split_with_pattern(pattern, atom)
-                    error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==REL else Evaluate().set_eval(left, right, operator_, init_)
-                    errors_ += [error_]
-                error = sum(errors_) if operator in {AND, NONE} else min(errors_)
-                self.auxiliary_evaluations(efect, init_.keys(), error)
+                    
+                try:
+                    for atom in subatoms:
+                        option = SET if get_indexes(inset+'|'+notin, atom) else REL
+                        atom = replace_pattern(quantifier.iterv, element, atom)
+                        efect = replace_pattern(quantifier.iterv, element, efect)
+                        opr, ops = Operator('relational'), Operator('set')
+                        pattern = rf"{opr.less_}|{opr.greater_}|{opr.equality_}|{ops.inset_}|{ops.notin_}"
+                        inds = get_indexes(pattern, atom)
+                        operator_ = atom[inds[0][0]:inds[0][1]]
+                        left, right = split_with_pattern(pattern, atom)
+                        error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==REL else Evaluate().set_eval(left, right, operator_, init_)
+                        errors_ += [error_]
+                    error = sum(errors_) if operator in {AND, NONE} else min(errors_)
+                    self.auxiliary_evaluations(efect, init_.keys(), error)
+                except IndexError:
+                    pass
 
 
     def auxiliary_evaluations(self, efect:str, globvars:list, error:float):

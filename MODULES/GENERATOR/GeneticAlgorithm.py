@@ -8,8 +8,13 @@ import numpy as np
 from copy import deepcopy
 
 class GeneticAlgorithm:
-    __slots__ = ('N_WORDS','solution','solutiondict')
+    __slots__ = ('N_WORDS','solution','solutiondict','DNUM','DELEM','DINDS','AND','OR','NONE','SET','REL','FORALL','EXISTS')
     def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
+        self.DNUM, self.DELEM, self.DINDS = (1,2,3)
+        self.AND, self.OR, self.NONE = (1,2,3)
+        self.SET,self.REL = (0,1)
+        self.FORALL, self.EXISTS = (1,2)
+
         self.N_WORDS = {'real':32,'int':13,'nat':12, 'nat0':12, 'char':7}
         self.solution = self.generate(parameters, variables, types, condition)
         self.solutiondict = {i:j for i,j in zip(variables, self.solution)}
@@ -153,18 +158,17 @@ class GeneticAlgorithm:
 
     def get_error_universal(self, atomic:str):
         # forall[ domain ] | P() <o> P() <o> ... <o> P().
-        AND, OR, NONE = (1,2,3)
-        FORALL, EXISTS = (1,2)
-        universal = Quantifiers(atomic,FORALL)
+        universal = Quantifiers(atomic,self.FORALL)
         errors = self.auxiliary_quantifier_error(universal)
-        return sum(errors) if universal.operator in {AND, NONE} else max(errors)
+        error = sum(errors) if universal.operator in {self.AND, self.NONE} else max(errors)
+        return error
             
     def get_error_existential(self, atomic:str):
         # exists[ domain ] | P() <o> P() <o> ... <o> P().
-        FORALL, EXISTS = (1,2)
-        existential = Quantifiers(atomic,EXISTS)
+        existential = Quantifiers(atomic,self.EXISTS)
         errors = self.auxiliary_quantifier_error(existential)
-        return min(errors)
+        error = min(errors)
+        return error
 
 
     def error_function(self, groups:dict, variables:list, fenotype:list):
@@ -202,10 +206,7 @@ class GeneticAlgorithm:
     def auxiliary_quantifier_error(self,quantifier:Quantifiers)->list:
         inset = Set().in_
         notint = Set().not_
-        DNUM, DELEM, DINDS = (1,2,3)
-        AND, OR, NONE = (1,2,3)
         functions = [self.get_error_set, self.get_error_relational]
-        SET,REL = [0,1]
         start = eval(quantifier.start.replace("\\", "\\\\"))
         end = eval(quantifier.end.replace("\\", "\\\\"))
         
@@ -218,13 +219,13 @@ class GeneticAlgorithm:
         errors = list()
         for i in range(start, end):
             errors_ = list()
-            element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
+            element = str(i) if quantifier.domtype in {self.DNUM, self.DINDS} else f"{quantifier.domain}[{i}]"
             for atom in quantifier.atoms:
-                funcinds = SET if get_indexes(inset+'|'+notint, atom) else REL
+                funcinds = self.SET if get_indexes(inset+'|'+notint, atom) else self.REL
                 atom = replace_pattern(quantifier.iterv, element, atom)
                 error = functions[funcinds](atom)
                 errors_ += [error]
-            errors.append(sum(errors_) if quantifier.operator in {AND, NONE} else min(errors_))
+            errors.append(sum(errors_) if quantifier.operator in {self.AND, self.NONE} else min(errors_))
         return errors
 
 
