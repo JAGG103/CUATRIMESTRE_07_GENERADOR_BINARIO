@@ -165,9 +165,14 @@ class GeneticAlgorithm:
             
     def get_error_existential(self, atomic:str):
         # exists[ domain ] | P() <o> P() <o> ... <o> P().
+        pneg = Operator('logic').not_
         existential = Quantifiers(atomic,self.EXISTS)
         errors = self.auxiliary_quantifier_error(existential)
         error = min(errors)
+                
+        if(get_indexes(pneg, atomic)):
+            error = 0.0 if error>0.0 else 100
+        
         return error
 
 
@@ -220,12 +225,15 @@ class GeneticAlgorithm:
         for i in range(start, end):
             errors_ = list()
             element = str(i) if quantifier.domtype in {self.DNUM, self.DINDS} else f"{quantifier.domain}[{i}]"
-            for atom in quantifier.atoms:
-                funcinds = self.SET if get_indexes(inset+'|'+notint, atom) else self.REL
-                atom = replace_pattern(quantifier.iterv, element, atom)
-                error = functions[funcinds](atom)
-                errors_ += [error]
-            errors.append(sum(errors_) if quantifier.operator in {self.AND, self.NONE} else min(errors_))
+            try:
+                for atom in quantifier.atoms:
+                    funcinds = self.SET if get_indexes(inset+'|'+notint, atom) else self.REL
+                    atom = replace_pattern(quantifier.iterv, element, atom)
+                    error = functions[funcinds](atom)
+                    errors_ += [error]
+                errors.append(sum(errors_) if quantifier.operator in {self.AND, self.NONE} else min(errors_))
+            except IndexError:
+                pass
         return errors
 
 

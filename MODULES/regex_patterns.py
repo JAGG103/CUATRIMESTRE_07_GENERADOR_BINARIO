@@ -51,6 +51,7 @@ class Operator:
             self.implies_ = r'\s+implies\s+'
             self.and_ = r'\s+and\s+'
             self.or_ = r'\s+or\s+'
+            self.not_ = r'\b\s*not\s+\b' 
         elif(option in {'set'}):
             self.inset_ = r'\s+inset\s+'
             self.notin_ = r'\s+notin\s+'
