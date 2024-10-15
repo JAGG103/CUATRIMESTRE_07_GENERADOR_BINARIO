@@ -80,7 +80,7 @@ class Delimiters:
         elif(option == 'such that'):
             self.suchthat = r"(?<!')\s*\|\s*(?!')"
         elif(option == 'to'):
-            self.to = r"\.{3}"
+            self.to = r"(?<!'),(?!')"
 
 class Mutations:
     __slots__ = ('less','equal','greater')
