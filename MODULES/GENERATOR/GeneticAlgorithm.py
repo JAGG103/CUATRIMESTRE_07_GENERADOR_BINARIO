@@ -204,8 +204,6 @@ class GeneticAlgorithm:
                         lenght = int(func[indexes[0][1]:])
                         lenghts.append(lenght)
                         break
-                    else:
-                        raise ValueError("No es una asignación")
         return lenghts
                         
     def auxiliary_quantifier_error(self,quantifier:Quantifiers)->list:

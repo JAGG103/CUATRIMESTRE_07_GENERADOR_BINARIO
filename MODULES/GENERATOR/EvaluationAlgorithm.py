@@ -136,8 +136,8 @@ class EvaluationAlgorithm:
             equality = Operator('relational').equality_
             left, right = split_with_pattern(equality, efect)
             for globvar in globvars:
-                modvar = rf"{globvar}(?!\[)"
-                modele = rf"{globvar}(?=\[)"
+                modvar = rf"\b{globvar}\b(?!\[)"
+                modele = rf"\b{globvar}\b(?=\[)"
                 inds_modvar = get_indexes(modvar, left)
                 inds_modele = get_indexes(modele, left)
                 if(inds_modvar):
