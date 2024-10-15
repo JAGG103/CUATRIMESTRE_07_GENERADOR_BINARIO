@@ -252,13 +252,13 @@ class Evaluate:
         else:
             raise ValueError("Operador invalido")
         
-    def relational_eval(self, left, right, operator, globvars):
+    def relational_eval(self, left:str, right:str, operator:str, globvars:dict):
         for variable in globvars.keys():
             globals()[variable] = globvars[variable]
         error = self.relational(left, right, operator)
         return error
 
-    def set_eval(self, left, right, operator, globvars):
+    def set_eval(self, left:str, right:str, operator:str, globvars:dict):
         for variable in globvars.keys():
             globals()[variable] = globvars[variable]
         error = self.set(left, right, operator)

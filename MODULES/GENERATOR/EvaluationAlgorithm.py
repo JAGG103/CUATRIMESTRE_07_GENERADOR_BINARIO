@@ -64,6 +64,10 @@ class EvaluationAlgorithm:
                 errors_ = list()
                 element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
                 for atom in subatoms:
+                    # Recupera los valores de las variables del proceso init y los guarda en el diccionario init_
+                    for variable in init_.keys():
+                        init_[variable] = eval(f"{variable}")
+                    # --------------------------------------
                     atom = replace_pattern(quantifier.iterv, element, atom)
                     option = SET if get_indexes(inset+'|'+notin, atom) else REL
                     if(option == REL):
@@ -75,7 +79,7 @@ class EvaluationAlgorithm:
                     inds = get_indexes(pattern, atom)
                     operator_ = atom[inds[0][0]:inds[0][1]]
                     left, right = split_with_pattern(pattern, atom)
-                    error_ = Evaluate().relational(left, right, operator_) if option==REL else Evaluate().set(left, right, operator_)
+                    error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==REL else Evaluate().set_eval(left, right, operator_, init_)
                     errors_ += [error_] 
                 errors.append(sum(errors_) if operator in {AND, NONE} else min(errors_))
             error = min(errors)
@@ -114,6 +118,10 @@ class EvaluationAlgorithm:
                     
                 try:
                     for atom in subatoms:
+                        # Recupera los valores de las variables del proceso init y los guarda en el diccionario init_
+                        for variable in init_.keys():
+                            init_[variable] = eval(f"{variable}")
+                        # ---------------------------------------
                         option = SET if get_indexes(inset+'|'+notin, atom) else REL
                         atom = replace_pattern(quantifier.iterv, element, atom)
                         efect = replace_pattern(quantifier.iterv, element, efect)
