@@ -1,64 +1,93 @@
 from MODULES.regex_functions import get_indexes, replace_pattern, split_with_pattern, get_indexes_blocks, indexes_avoiding_head_and_tail, get_elements_notin_indexes
-from MODULES.regex_patterns import Operator, Delimiters, Universal, Existential, Types
+
+#from MODULES.regex_patterns import Operator, Delimiters, Universal, Existential, Types
+from MODULES.regex_patterns2 import Operator,Delimiter, Quantifier
 
 from fxpmath import Fxp
 import random
 import math
 
-class Coding:
+class Flags:
+    __slots__ = ('AND','OR','NONE','DOMAINNUM','DOMAINELEMS','DOMAININDS')
     def __init__(self):
-        # deja 1 bit para signo y 12 bits para la parte entera    
-        # -4096.00 to 4096.00
-        self.N_WORD_REAL = 32
-        self.N_FRAC_REAL = 19
-        # -4096 to 4096
-        self.N_WORD_INT = 13
-        # 0 to 4096
-        self.N_WORD_NAT = 12
-        # 0 - 127
-        self.N_WORD_CHAR = 7
+        self.AND = 0
+        self.OR = 1
+        self.NONE = 2
 
+        self.DOMAINNUM = 0
+        self.DOMAINELEMS = 1
+        self.DOMAININDS = 2
+
+class FixedPoint:
+    # Clase utilizada para parametrizar el númerico de bits destinado a cada tipo, con el objetivo de aumentar o reducir
+    # los valores que estos tipos de datos pueden tomar.
+    # Para el tipo de dato REAL se deja un bit de signo, n bits para la parte entera y m bits para la parte fraccionaria.
+    __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR','nwords')
+    def __init__(self):
+        self.N_WORD_REAL = 32 # -4096.00 to 4096.00
+        self.N_FRAC_REAL = self.N_WORD_REAL - self.N_WORD_INT
+        self.N_WORD_INT = 13  # -4096 to 4096
+        self.N_WORD_NAT = self.N_WORD_INT - 1  # 0 to 4096
+        self.N_WORD_CHAR = 7  # 0 - 127
+        self.nwords = [self.N_WORD_REAL, self.N_WORD_INT, self.N_WORD_NAT, self.N_WORD_NAT, self.N_WORD_CHAR] # [real, int, nat, nat0, char]
+
+class Coding:
+    # Clase utilizada para códificación de las soluciones en la secuencia genética de los individuos
+    __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR')
+    def __init__(self):
+        fxp = FixedPoint()
+        self.N_WORD_REAL = fxp.N_FRAC_REAL
+        self.N_FRAC_REAL = fxp.N_FRAC_REAL
+        self.N_WORD_INT = fxp.N_WORD_INT
+        self.N_WORD_NAT = fxp.N_WORD_NAT
+        self.N_WORD_CHAR = fxp.N_WORD_CHAR
+
+    # Método utilizado para obtener el genotipo (cadena binaria) a partir de un elemento continuo {int,real,nat,nat0,char}
     def get_genotype(self, element:int|float|str, typee:str) -> list:
-        # Resultado al códificar la secuencia genética
+        # Si el tipo de dato pertenece a:
+            # Si el valor pertenece a un tipo continuo 'int' crea una variable de la clase Fxp para obtener su representación binaria
+            # Si el valor pertenece a un tipo continuo 'nat' o 'nat0' crea una variable de la clase Fxp para obtener su representación binaria
+            # Si el valor pertenece a un tipo continuo 'real' crea una variable de la clase Fxp para obtener su representación binaria
+            # Si el valor pertenece a un tipo continuo 'char' crea una variable de la clase Fxp con su valor ascii, para obtener su representación binaria
+            # Si el tipo de dato no pertenece al conjunto {int,nat,nat0,real,char} levanta una excepción
+        # Obtiene la representación binaria:str de la variable x:Fxp
+        # Obtiene una lista de python donde cada elemento es un valor binario en forma de cadena de caracteres
         if(typee in {'int'}):
             x = Fxp(element, signed=True, n_word=self.N_WORD_INT)
-        
         elif(typee in {'nat', 'nat0'}):
             x = Fxp(element, signed=False, n_word=self.N_WORD_NAT)
-
         elif(typee in {'real'}):
             x = Fxp(element, signed=True, n_word=self.N_WORD_REAL, n_frac=self.N_FRAC_REAL)
-
         elif(typee in {'char'}):
             ascii_ = ord(element)
             x = Fxp(int(ascii_), signed=False, n_word=self.N_WORD_CHAR)
-        else:
+        else: 
             raise ValueError("Error")
         x_bin = x.bin()
         x_lst = [e for e in x_bin]
         return x_lst
         
-        
+    # Método utilizado para recuperar el elemento continuo, a partir de su representación binaria
     def get_fenotype(self, binary:list, typee:str):
-        # Resultado de decodificar
-        
         binaryStr = "".join(binary)
-
+        # Si el tipo de dato pertenece a:
+            # Si la secuencia binaria representa un elemento de tipo 'int' se recupera su valor
+            # Si la secuencia binaria representa un elemento de tipo 'nat' o 'nat0' se recupera su valor
+            # Si la secuencia binaria representa un elemento de tipo 'real' se recupera su valor
+            # Si la secuencia binaria representa un elemento de tipo 'char' se recupera su valor, si este valor sale del rango [32,126] regresa un None
+        # Regresa el elemento continuo códificado en la cadena binaria
         if(typee in {'int'}):
             x = Fxp(0, signed=True, n_word=self.N_WORD_INT)
             x('0b'+binaryStr)
             x_rec = x.astype(int).item()
-
         elif(typee in {'nat', 'nat0'}):
             x = Fxp(0, signed=False, n_word=self.N_WORD_NAT)
             x('0b'+binaryStr)
             x_rec = x.astype(int).item()
-
         elif(typee in {'real'}):
             x = Fxp(0.0, signed=True, n_word=self.N_WORD_REAL, n_frac=self.N_FRAC_REAL)
             x('0b'+binaryStr)
             x_rec = x.astype(float).item()
-
         elif(typee in {'char'}):
             ascii_ = ord(" ")
             x = Fxp(ascii_, signed=False, n_word=self.N_WORD_CHAR)
@@ -72,7 +101,7 @@ class Coding:
             raise ValueError("Error")
         return x_rec
 
-
+    # Método que permite generar un elemento continuo de un tipo en especifico {int,nat,nat0,real,char} utilizando DISTANCE una constante para variar el tamaño del dominio  
     def generate_element(self, typee:str, DISTANCE:int)->int|float:
         if(typee in {'int'}):
             e = random.randint(-DISTANCE,DISTANCE)
@@ -89,23 +118,24 @@ class Coding:
             raise ValueError("Error")
         return e
 
-
+    # Método que permite generar una secuencia de elementos de un tipo en especifico {int,nat,nat0,real,char}, utilizando la constante DISTANCE para variar el dominio y LENGH el tamaño de la secuencia
     def generate_sequence(self, typee:str, DISTANCE:int, LENGHT:int)->list:
         sequence = [self.generate_element(typee, DISTANCE) for _ in range(LENGHT)]
         return sequence 
 
-class Quantifiers:
-    __slots__ = ('atoms','operator','iterv','domain','domtype','start','end')
-    def __init__(self, predicate:str, target:int):
-        FORALL,EXISTS = (1,2)
-        if(target == FORALL):
-            self.extract_information(predicate, Universal('generation'))
-        elif(target == EXISTS):
-            self.extract_information(predicate, Existential('generation'))
-        else:
-            raise ValueError("Objetivo invalido")
 
-    def extract_information(self, atomic:str, quantifier:str):    
+class Quantifiers:
+    __slots__ = ()
+    def __init__(self, predicate:str):
+        self.extract_information(predicate)
+        
+
+    def extract_information(self, atomic:str, quantifier:str): 
+        delimiter = Delimiter()
+        operator = Operator()
+        quantifier = Quantifier()
+
+
         suchthat = Delimiters('such that').suchthat
         evaluation = Delimiters('evaluation')
         to = Delimiters('to').to
@@ -332,5 +362,6 @@ class Assignments:
                     validright = False if get_indexes(pattern, right) else validright
             valid = True if validleft and validright else False
         return valid
+
 
 
