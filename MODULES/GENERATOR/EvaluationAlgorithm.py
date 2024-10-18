@@ -1,6 +1,7 @@
-from MODULES.GENERATOR.auxiliary import Quantifiers, Evaluate
-from MODULES.regex_patterns import Operator
 from MODULES.regex_functions import get_indexes, get_elements_notin_indexes, replace_pattern, split_with_pattern
+
+from MODULES.GENERATOR.auxiliary import Quantifiers, Evaluate, Flags
+from MODULES.regex_patterns2 import Operator
 
 class EvaluationAlgorithm:
     def __init__(self, evaluations:dict, init:dict):
@@ -24,97 +25,82 @@ class EvaluationAlgorithm:
 
     def evaluate_existential(self, predicate:str, init_:dict):
         # Este operador realizara los efectos siempre que la causa se cumpla, el numero de veces que la implicación se cumpla
-        FORALL,EXISTS = (1,2)
-        existential = Quantifiers(predicate,EXISTS)
+        existential = Quantifiers(predicate)
         self.auxiliary_existential(existential, init_)
             
     def evaluate_universal(self, predicate:str, init_:dict):
         # Este operador realizara el efecto una vez si se cumple el efecto.
-        FORALL,EXISTS = (1,2)
-        universal = Quantifiers(predicate,FORALL)
+        universal = Quantifiers(predicate)
         self.auxiliary_universal(universal, init_,)
 
 
     def auxiliary_existential(self, quantifier:Quantifiers, init_:dict):
         # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
-        AND, OR, NONE = (1,2,3)
-        DNUM, DELEM, DINDS = (1,2,3)
-        SET,REL = [0,1]
-        inset = Operator('set').inset_
-        notin = Operator('set').notin_
+        operatorobj = Operator()
+        flags = Flags()
 
         for atom in quantifier.atoms:
-            op = Operator('logic')
             atom = atom[1:-1]
-            inds = get_indexes(op.implies_, atom)
+            inds = get_indexes(operatorobj.implies, atom)
             causes = atom[:inds[0][0]]
             efect = atom[inds[0][1]:]
-            inds_and = get_indexes(op.and_, causes)
-            inds_or = get_indexes(op.or_, causes)
+            inds_and = get_indexes(operatorobj.and_, causes)
+            inds_or = get_indexes(operatorobj.or_, causes)
             if(inds_and):
-                subatoms, operator = get_elements_notin_indexes(inds_and, causes), AND
+                subatoms, operator = get_elements_notin_indexes(inds_and, causes), flags.AND
             elif(inds_or):
-                subatoms, operator = get_elements_notin_indexes(inds_or, causes), OR
+                subatoms, operator = get_elements_notin_indexes(inds_or, causes), flags.OR
             else:
-                subatoms, operator = [causes], NONE
+                subatoms, operator = [causes], flags.NONE
             start = eval(quantifier.start)
             end = eval(quantifier.end.replace("\\", "\\\\"))
             errors = list()
             for i in range(start, end):
                 errors_ = list()
-                element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
+                element = str(i) if quantifier.domaint in {flags.DOMAINNUM, flags.DOMAININDS} else f"{quantifier.domain}[{i}]"
                 for atom in subatoms:
                     # Recupera los valores de las variables del proceso init y los guarda en el diccionario init_
                     for variable in init_.keys():
                         init_[variable] = eval(f"{variable}")
                     # --------------------------------------
-                    atom = replace_pattern(quantifier.iterv, element, atom)
-                    option = SET if get_indexes(inset+'|'+notin, atom) else REL
-                    if(option == REL):
-                        op = Operator('relational')
-                        pattern = rf"{op.less_}|{op.greater_}|{op.equality_}"
-                    elif(option == SET):
-                        op = Operator('set')
-                        pattern = rf"{op.inset_}|{op.notin_}"
+                    atom = replace_pattern(quantifier.itervar, element, atom)
+                    option = flags.SET if get_indexes(operatorobj.inset+'|'+operatorobj.notin, atom) else flags.REL
+                    pattern = rf"{operatorobj.inset}|{operatorobj.notin}|{operatorobj.less}|{operatorobj.greater}|{operatorobj.equality}|{operatorobj.le}|{operatorobj.ge}|{operatorobj.inequality}"
                     inds = get_indexes(pattern, atom)
                     operator_ = atom[inds[0][0]:inds[0][1]]
                     left, right = split_with_pattern(pattern, atom)
-                    error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==REL else Evaluate().set_eval(left, right, operator_, init_)
+                    error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==flags.REL else Evaluate().set_eval(left, right, operator_, init_)
                     errors_ += [error_] 
-                errors.append(sum(errors_) if operator in {AND, NONE} else min(errors_))
+                errors.append(sum(errors_) if operator in {flags.AND, flags.NONE} else min(errors_))
             error = min(errors)
             self.auxiliary_evaluations(efect, init_.keys(), error)
 
 
     def auxiliary_universal(self, quantifier:Quantifiers, init_:dict):
         # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
-        AND, OR, NONE = (1,2,3)
-        DNUM, DELEM, DINDS = (1,2,3)
-        SET,REL = [0,1]
-        inset = Operator('set').inset_
-        notin = Operator('set').notin_
+        operatorobj = Operator()
+        flags = Flags()
 
         start = eval(quantifier.start)
         end = eval(quantifier.end.replace("\\", "\\\\"))
         # Iteración sobre los elementos del dominio
         for i in range(start, end):
-            element = str(i) if quantifier.domtype in {DNUM, DINDS} else f"{quantifier.domain}[{i}]"
+            element = str(i) if quantifier.domaint in {flags.DOMAINNUM, flags.DOMAININDS} else f"{quantifier.domain}[{i}]"
             # Iteración sobre los Conjuntivos (evaluaciones)
             for atom in quantifier.atoms:
                 errors_ = list()
-                op = Operator('logic')
                 atom = atom[1:-1]
-                inds = get_indexes(op.implies_, atom)
+                inds = get_indexes(operatorobj.implies, atom)
                 causes = atom[:inds[0][0]]
                 efect = atom[inds[0][1]:]
-                inds_and = get_indexes(op.and_, causes)
-                inds_or = get_indexes(op.or_, causes)
+                inds_and = get_indexes(operatorobj.and_, causes)
+                inds_or = get_indexes(operatorobj.or_, causes)
                 if(inds_and):
-                    subatoms, operator = get_elements_notin_indexes(inds_and, causes), AND
+                    subatoms, operator = get_elements_notin_indexes(inds_and, causes), flags.AND
                 elif(inds_or):
-                    subatoms, operator = get_elements_notin_indexes(inds_or, causes), OR
+                    subatoms, operator = get_elements_notin_indexes(inds_or, causes), flags.OR
                 else:
-                    subatoms, operator = [causes], NONE
+                    subatoms, operator = [causes], flags.NONE
                     
                 try:
                     for atom in subatoms:
@@ -122,17 +108,16 @@ class EvaluationAlgorithm:
                         for variable in init_.keys():
                             init_[variable] = eval(f"{variable}")
                         # ---------------------------------------
-                        option = SET if get_indexes(inset+'|'+notin, atom) else REL
-                        atom = replace_pattern(quantifier.iterv, element, atom)
-                        efect = replace_pattern(quantifier.iterv, element, efect)
-                        opr, ops = Operator('relational'), Operator('set')
-                        pattern = rf"{opr.less_}|{opr.greater_}|{opr.equality_}|{ops.inset_}|{ops.notin_}"
+                        option = flags.SET if get_indexes(operatorobj.inset+'|'+operatorobj.notin, atom) else flags.REL
+                        atom = replace_pattern(quantifier.itervar, element, atom)
+                        efect = replace_pattern(quantifier.itervar, element, efect)
+                        pattern = rf"{operatorobj.less}|{operatorobj.greater}|{operatorobj.equality}|{operatorobj.le}|{operatorobj.ge}|{operatorobj.inequality}|{operatorobj.inset}|{operatorobj.notin}"
                         inds = get_indexes(pattern, atom)
                         operator_ = atom[inds[0][0]:inds[0][1]]
                         left, right = split_with_pattern(pattern, atom)
-                        error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==REL else Evaluate().set_eval(left, right, operator_, init_)
+                        error_ = Evaluate().relational_eval(left, right, operator_, init_) if option==flags.REL else Evaluate().set_eval(left, right, operator_, init_)
                         errors_ += [error_]
-                    error = sum(errors_) if operator in {AND, NONE} else min(errors_)
+                    error = sum(errors_) if operator in {flags.AND, flags.NONE} else min(errors_)
                     self.auxiliary_evaluations(efect, init_.keys(), error)
                 except IndexError:
                     pass
@@ -140,9 +125,10 @@ class EvaluationAlgorithm:
 
     def auxiliary_evaluations(self, efect:str, globvars:list, error:float):
         # Función que permite modificar los valores de las variables globales dentro de las evaluaciones
+        operatorobj = Operator()
+
         if(error == 0.0):
-            equality = Operator('relational').equality_
-            left, right = split_with_pattern(equality, efect)
+            left, right = split_with_pattern(operatorobj.equality, efect)
             for globvar in globvars:
                 modvar = rf"\b{globvar}\b(?!\[)"
                 modele = rf"\b{globvar}\b(?=\[)"

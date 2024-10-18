@@ -1,14 +1,14 @@
 from MODULES.regex_functions import get_indexes, replace_pattern, split_with_pattern, get_indexes_blocks, indexes_avoiding_head_and_tail, get_elements_notin_indexes
 
-#from MODULES.regex_patterns import Operator, Delimiters, Universal, Existential, Types
-from MODULES.regex_patterns2 import Operator,Delimiter, Quantifier
+from MODULES.regex_patterns2 import Operator,Quantifier,Type
 
 from fxpmath import Fxp
 import random
 import math
 
+# Clase utilizada para administrar constantes utilizadas como identificadores
 class Flags:
-    __slots__ = ('AND','OR','NONE','DOMAINNUM','DOMAINELEMS','DOMAININDS')
+    __slots__ = ('AND','OR','NONE','DOMAINNUM','DOMAINELEMS','DOMAININDS','SET','REL')
     def __init__(self):
         self.AND = 0
         self.OR = 1
@@ -18,19 +18,23 @@ class Flags:
         self.DOMAINELEMS = 1
         self.DOMAININDS = 2
 
+        self.SET = 0
+        self.REL = 1
+
+# Clase utilizada para parametrizar el númerico de bits destinado a cada tipo, con el objetivo de aumentar o reducir
 class FixedPoint:
-    # Clase utilizada para parametrizar el númerico de bits destinado a cada tipo, con el objetivo de aumentar o reducir
     # los valores que estos tipos de datos pueden tomar.
     # Para el tipo de dato REAL se deja un bit de signo, n bits para la parte entera y m bits para la parte fraccionaria.
     __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR','nwords')
     def __init__(self):
+        self.N_WORD_INT = 13  # -4096 to 4096
         self.N_WORD_REAL = 32 # -4096.00 to 4096.00
         self.N_FRAC_REAL = self.N_WORD_REAL - self.N_WORD_INT
-        self.N_WORD_INT = 13  # -4096 to 4096
         self.N_WORD_NAT = self.N_WORD_INT - 1  # 0 to 4096
         self.N_WORD_CHAR = 7  # 0 - 127
         self.nwords = [self.N_WORD_REAL, self.N_WORD_INT, self.N_WORD_NAT, self.N_WORD_NAT, self.N_WORD_CHAR] # [real, int, nat, nat0, char]
 
+# Clase utilizada para la códificación y decodificación de las cadenas genéticas
 class Coding:
     # Clase utilizada para códificación de las soluciones en la secuencia genética de los individuos
     __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR')
@@ -123,80 +127,78 @@ class Coding:
         sequence = [self.generate_element(typee, DISTANCE) for _ in range(LENGHT)]
         return sequence 
 
-
+# Clase utilizada para extraer información de los predicados con cuantificadores
 class Quantifiers:
-    __slots__ = ()
+    __slots__ = ('atoms','operator','itervar','domain','domaint','start','end')
     def __init__(self, predicate:str):
         self.extract_information(predicate)
         
 
-    def extract_information(self, atomic:str, quantifier:str): 
-        delimiter = Delimiter()
+    def extract_information(self, atomic:str): 
         operator = Operator()
         quantifier = Quantifier()
+        flags = Flags()
 
-
-        suchthat = Delimiters('such that').suchthat
-        evaluation = Delimiters('evaluation')
-        to = Delimiters('to').to
-        op = Operator('logic')
-        AND, OR, NONE = (1,2,3)
-        DNUM, DELEM, DINDS = (1,2,3)
-        inds = get_indexes(suchthat, atomic)
+        inds = get_indexes(quantifier.suchthat, atomic)
         # Contenido
         content = atomic[inds[0][1]:-1]
-        inds_and = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.and_,content)
-        inds_or = indexes_avoiding_head_and_tail([evaluation._evaluation],[evaluation.evaluation_],op.or_,content)
+        inds_and = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.evaluation], operator.and_, content)
+        inds_or = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.evaluation], operator.or_, content)
         if(inds_and):
-            atoms, operator = get_elements_notin_indexes(inds_and, content), AND
+            atoms, operator = get_elements_notin_indexes(inds_and, content), flags.AND
         elif(inds_or):
-            atoms, operator = get_elements_notin_indexes(inds_or, content), OR
+            atoms, operator = get_elements_notin_indexes(inds_or, content), flags.OR
         else:
-            atoms, operator = [content], NONE 
+            atoms, operator = [content], flags.NONE
         # Iterable variable
         content = atomic[:inds[0][0]]
-        inds = get_indexes(quantifier.iterv, content)
-        iterv = content[inds[0][0]:inds[0][1]]
-        iterv = rf"(?<!')\b{iterv}\b(?!')"
+        inds = get_indexes(quantifier.itervar, content)
+        itervar = content[inds[0][0]:inds[0][1]]
+        itervar = rf"(?<!')\b{itervar}\b(?!')"
         # dominio
-        inds_domnum = get_indexes_blocks(content, quantifier._domainnum, quantifier.domainnum_)
-        inds_domelem = get_indexes_blocks(content, quantifier._domainelems, quantifier.domainelems_)
-        inds_dominds = get_indexes_blocks(content, quantifier._domaininds, quantifier.domaininds_)
+        inds_domnum = get_indexes_blocks(content, quantifier.num, quantifier.endnum)
+        inds_domelem = get_indexes_blocks(content, quantifier.elems, quantifier.endie)
+        inds_dominds = get_indexes_blocks(content, quantifier.inds, quantifier.endie)
         if(inds_domnum):
             domain = content[inds_domnum[0][0]+1:inds_domnum[0][1]-1]
-            start, end = split_with_pattern(to, domain)
-            domtype = DNUM
+            start, end = split_with_pattern(quantifier.to, domain)
+            domaint = flags.DOMAINNUM
         elif(inds_domelem):
             domain = content[inds_domelem[0][0]+6:inds_domelem[0][1]-1]
             start, end = '0',f'len({domain})'
-            domtype = DELEM
+            domaint = flags.DOMAINELEMS
         elif(inds_dominds):
             domain = content[inds_dominds[0][0]+5:inds_dominds[0][1]-1]
             start, end = '0',f'len({domain})'
-            domtype = DINDS
+            domaint = flags.DOMAININDS
         else:
             raise ValueError("Dominios invalidos en cuantificador")
         self.atoms = atoms
         self.operator = operator
-        self.iterv = iterv
+        self.domaint = domaint
+        self.itervar = itervar
         self.domain = domain
-        self.domtype = domtype
         self.start = start
         self.end = end
 
+# Clase que permite agrupar métodos utiles para hacer sustituciones de variables por sus valores
 class Substitute:
+    __slots__ = ()
     def __init__(self):
         pass
 
-    def substitute_pattern_notinside(self, values:dict, predicate:str):
+    # Método utilizado para sustituir los valores presentes en 'values' en el predicado 'predicates' ignorando la operación si esa variable esta dentro de una evaluación
+    def substitute_values_notin_evaluations(self, values:dict, predicate:str):
+        quantifier = Quantifier()
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
-            inds = indexes_avoiding_head_and_tail([r"(?<!')\{(?!')"],[r"(?<!')\}(?!')"], pattern, predicate)
+            inds = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.endevaluation], pattern, predicate)
             if(inds):
                 for i,j in inds:
                     predicate = predicate[:i] + str(values[variable]) + predicate[j:]
         return predicate
 
+    # Método utilizado para sustituir los valores en 'values' en el predicado 'predicate'
     def substitute_dict(self, values:dict, predicate:str)->str:
         for variable in values.keys():
             pattern = rf'\b{variable}\b'
@@ -207,10 +209,8 @@ class Substitute:
                 predicate = replace_pattern(pattern, element, predicate)
         return predicate
 
+    # Método utilizado para sustituir los valores del fenotipo 'seqofvalues' (sin codificar) en el predicado 'predicate' apoyandose de los nombres de las variables
     def substitute_values(self, predicate:str, variables:list, seqofvalues:list) -> list:
-        # Función que toma un predicado atomico y substituye las variables en el
-        # Con sus valores generados presentes la variable "chromosoma"
-        # donde cada elemento del cromosoma es un valor generador para
         # la varible con su mismo indice. len(variable) = len(chromosome)
         for i in range(len(variables)):
             pattern = rf"\b{variables[i]}\b"
@@ -218,6 +218,7 @@ class Substitute:
                 predicate = replace_pattern(pattern, str(seqofvalues[i]), predicate)
         return predicate
 
+# Clase utilizada para obtener los errores de expresiones relacionales y las que operan sobre conjuntos (No contienen variables) solo expresion dereche, izquierda y operador
 class Evaluate:
     def __init__(self):
         pass
@@ -226,7 +227,8 @@ class Evaluate:
         # Funcion que permite evaluar una expresión relacional y 
         # regresa un error. La parte izquiera y derecha de la expresión
         # no contienen variables.
-        op = Operator('relational')
+        operator_ = Operator()
+
         try:
             left = float(eval(left))
             right = float(eval(right))
@@ -234,29 +236,38 @@ class Evaluate:
             error = 100.0
             return error
 
-        indsgreat, indsless, indseq = get_indexes(op.greater_,operator), get_indexes(op.less_,operator), get_indexes(op.equality_,operator)
-        if(indsgreat or indsless or indseq):
-            diff = left - right
-            if(indsgreat and diff>0) or (indsless and diff<0) or (indseq and (diff==0 or math.isclose(diff,0.0,abs_tol=0.00001))):
+        indsge, indsle, indseq = get_indexes(operator_.ge, operator), get_indexes(operator_.le, operator), get_indexes(operator_.equality, operator)
+        indsg, indsl, indsinq = get_indexes(operator_.greater, operator), get_indexes(operator_.less, operator), get_indexes(operator_.inequality, operator)
+
+        diff = left - right
+        if(indsge or indsle or indseq):
+            if(indsge and diff>=0) or (indsle and diff<=0) or (indseq and math.isclose(diff,0.0,abs_tol=0.00001)):
+                error = 0.0
+            else:
+                error = abs(diff)
+        elif(indsg or indsl or indsinq):
+            if(indsg and diff>0) or (indsl and diff<0) or (indsinq and diff!=0):
                 error = 0.0
             else:
                 error = 1 if diff==0.0 else abs(diff)
         else:
             raise ValueError("Invalid Operator")
-        
         return error
 
+
     def set(self, left:str, right:str, operator:str):
-        op = Operator('set')
+        operatorobj = Operator()
+
         errors = []
         left = eval(left.replace("\\", "\\\\"))
         right = eval(right.replace("\\", "\\\\"))
+
         if(left==None or (type(left)==list and None in left)):
             return 200
+        
         for element in right:
             error = 0.0
-            typeelm = type(element)
-            typeleft = type(left)
+            typeelm, typeleft = type(element), type(left)
             left = ''.join(left) if typeleft==list else left
             typeleft = type(left)
             if(typeelm == typeleft):
@@ -271,7 +282,7 @@ class Evaluate:
                 raise ValueError(f"Los elementos utilizados en el operador inset o notin no son del mismo tipo: {typeleft} {typeelm}")
             errors.append(error)
         minimal = min(errors)
-        indsin, indsnot = get_indexes(op.inset_, operator), get_indexes(op.notin_, operator)
+        indsin, indsnot = get_indexes(operatorobj.inset, operator), get_indexes(operatorobj.notin, operator)
         if(indsin):
             return minimal
         elif(indsnot):
@@ -295,9 +306,10 @@ class Evaluate:
         return error
     
     def satisfiability_relational(self, atoms:list, values:dict):
+        op = Operator()
+
         error = 0.0
-        op = Operator('relational')
-        pattern = rf"{op.equality_}|{op.less_}|{op.greater_}"
+        pattern = rf"{op.equality}|{op.less}|{op.greater}|{op.inequality}|{op.le}|{op.ge}"
         for atom in atoms:
             indexes = get_indexes(pattern, atom)
             if(indexes):
@@ -309,10 +321,11 @@ class Evaluate:
                     return error
         return error
 
+# Clase utilizada para resolver asignaciones
 class Assignments:
-    __slots__ = ('equality')
+    __slots__ = ()
     def __init__(self):
-        self.equality = Operator('relational').equality_
+        pass
 
     def assignments(self, variables:list, types:list, atoms:list) -> dict:
         # Método que se encarga de iterar sobre una lista de predicados atomicos y evalua si son asignaciones validas
@@ -320,12 +333,14 @@ class Assignments:
         # restantes debe de estar del lado derecho, este valor se guarda en values y el atomo no se considera para futuras generaciones.
         # Puede suceder el caso de que dos asiganaciones esten en la lista, en este caso solo la primera sera considerada y
         # los otros predicados que contengan asignación seran considerados para futuras evaluaciones
+        typeobj = Type()
+        operatorobj = Operator()
+
         atoms_ = []
         values = dict()
-        typeobj = Types()
         for atom in atoms:
             if(self.isvalid_assigment(variables, atom)):
-                inds = get_indexes(self.equality, atom)
+                inds = get_indexes(operatorobj.equality, atom)
                 variable = atom[:inds[0][0]]
                 value = atom[inds[0][1]:]
                 for v,t in zip(variables,types):      
@@ -347,8 +362,10 @@ class Assignments:
         return values,atoms_
 
     def isvalid_assigment(self, variables:list, atom:str) -> bool:
+        operatorobj = Operator()
+
         valid, validleft, validright = (False, False, True)
-        inds = get_indexes(self.equality, atom)
+        inds = get_indexes(operatorobj.equality, atom)
         if(inds):
             left = atom[:inds[0][0]]
             right = atom[inds[0][1]:]

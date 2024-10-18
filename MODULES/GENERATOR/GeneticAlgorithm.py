@@ -1,21 +1,30 @@
-from MODULES.regex_patterns import Operator, Types, Set
+#from MODULES.regex_patterns import Operator, Types, Set
+from MODULES.regex_patterns2 import Operator, Type
+
 from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern
 from MODULES.GENERATOR.Individual import Individual
-from MODULES.GENERATOR.auxiliary import Evaluate, Substitute, Quantifiers
+from MODULES.GENERATOR.auxiliary import Evaluate, Substitute, Quantifiers, FixedPoint, Flags
 from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 
 import numpy as np
 from copy import deepcopy
 
 class GeneticAlgorithm:
-    __slots__ = ('N_WORDS','solution','solutiondict','DNUM','DELEM','DINDS','AND','OR','NONE','SET','REL','FORALL','EXISTS')
+    __slots__ = ('N_WORDS','solution','solutiondict','DNUM','DELEM','DINDS','AND','OR','NONE','SET','REL')
     def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
-        self.DNUM, self.DELEM, self.DINDS = (1,2,3)
-        self.AND, self.OR, self.NONE = (1,2,3)
-        self.SET,self.REL = (0,1)
-        self.FORALL, self.EXISTS = (1,2)
+        flags = Flags()
+        fxp = FixedPoint()
 
-        self.N_WORDS = {'real':32,'int':13,'nat':12, 'nat0':12, 'char':7}
+        self.DNUM = flags.DOMAINNUM
+        self.DELEM = flags.DOMAINELEMS
+        self.DINDS = flags.DOMAININDS
+        self.AND = flags.AND
+        self.OR =  flags.OR
+        self.NONE = flags.NONE
+        self.SET = flags.SET
+        self.REL = flags.REL
+
+        self.N_WORDS = {'real':fxp.N_WORD_REAL,'int':fxp.N_WORD_INT,'nat':fxp.N_WORD_NAT, 'nat0':fxp.N_WORD_NAT, 'char':fxp.N_WORD_CHAR}
         self.solution = self.generate(parameters, variables, types, condition)
         self.solutiondict = {i:j for i,j in zip(variables, self.solution)}
 
@@ -25,7 +34,7 @@ class GeneticAlgorithm:
         solved = False
         generation = 0
 
-        lenghts = self.get_lenghts(types, variables, condition['func len'])
+        lenghts = self.get_lenghts(types, variables, condition['function len'])
         genotypelenght = self.get_chrosome_lenght(types, lenghts)
         population = self.create_population(parameters['n_population'], types, parameters['distance'], lenghts)
         while(generation < parameters['generations']):
@@ -122,10 +131,10 @@ class GeneticAlgorithm:
         return stochasticVector
 
     def get_chrosome_lenght(self, types:list, lenghts:list):
+        typeobj = Type()
         counter = 0
-        pattern = Types().seqof
         for i in range(len(types)):
-            indexes = get_indexes(pattern, types[i])
+            indexes = get_indexes(typeobj.seqof, types[i])
             if(indexes):
                 typee = types[i][indexes[0][1]:]
             else:
@@ -139,8 +148,8 @@ class GeneticAlgorithm:
 
     def get_error_relational(self, atomicp:str):
         # Método que sustituye en el predicado atómico relacional con la posible solución (presente en el fenotipo) y calcula su error 
-        op = Operator('relational')
-        pattern = rf"{op.less_}|{op.greater_}|{op.equality_}"
+        opobj = Operator()
+        pattern = rf"{opobj.less}|{opobj.greater}|{opobj.equality}|{opobj.le}|{opobj.ge}|{opobj.inequality}"
         indexes = get_indexes(pattern, atomicp)
         operator = atomicp[indexes[0][0]:indexes[0][1]]
         left, right = split_with_pattern(pattern, atomicp)
@@ -148,8 +157,8 @@ class GeneticAlgorithm:
         return error
 
     def get_error_set(self, atomicp:str):
-        op = Operator('set')
-        pattern = rf"{op.inset_}|{op.notin_}"
+        opobj = Operator()
+        pattern = rf"{opobj.inset}|{opobj.notin}"
         indexes = get_indexes(pattern, atomicp)
         operator = atomicp[indexes[0][0]:indexes[0][1]]
         left, right = split_with_pattern(pattern, atomicp)
@@ -157,22 +166,24 @@ class GeneticAlgorithm:
         return error
 
     def get_error_universal(self, atomic:str):
-        # forall[ domain ] | P() <o> P() <o> ... <o> P().
-        universal = Quantifiers(atomic,self.FORALL)
+        # forall[ domain ] | P() <o> P() <o> ... <o> P();
+        flags = Flags()
+        universal = Quantifiers(atomic)
+
         errors = self.auxiliary_quantifier_error(universal)
-        error = sum(errors) if universal.operator in {self.AND, self.NONE} else max(errors)
+        error = sum(errors) if universal.operator in {flags.AND, flags.NONE} else max(errors)
         return error
             
     def get_error_existential(self, atomic:str):
         # exists[ domain ] | P() <o> P() <o> ... <o> P().
-        pneg = Operator('logic').not_
-        existential = Quantifiers(atomic,self.EXISTS)
+        operatorobj = Operator()
+        existential = Quantifiers(atomic)
+
         errors = self.auxiliary_quantifier_error(existential)
         error = min(errors)
-                
-        if(get_indexes(pneg, atomic)):
+        # Considera si existe una negación delante operador
+        if(get_indexes(operatorobj.not_, atomic)):
             error = 0.0 if error>0.0 else 100
-        
         return error
 
 
@@ -188,11 +199,12 @@ class GeneticAlgorithm:
 
     # Crear vector de longitudes
     def get_lenghts(self, types:list, variables:list, groupfunc:list)->list:
-        equality = Operator('relational').equality_
-        seqof = Types().seqof
+        operatorobj = Operator()
+        typeobj = Type()
+
         lenghts = []
         for i in range(len(types)):
-            indexes = get_indexes(seqof, types[i])
+            indexes = get_indexes(typeobj.seqof, types[i])
             if(indexes==None):
                 lenghts.append(1)
             else:
@@ -200,15 +212,15 @@ class GeneticAlgorithm:
                 for func in groupfunc:
                     indexes = get_indexes(pattern,func)
                     if(indexes):
-                        indexes = get_indexes(equality, func)
+                        indexes = get_indexes(operatorobj.equality, func)
                         lenght = int(func[indexes[0][1]:])
                         lenghts.append(lenght)
                         break
         return lenghts
                         
     def auxiliary_quantifier_error(self,quantifier:Quantifiers)->list:
-        inset = Set().in_
-        notint = Set().not_
+        operatorobj = Operator()
+
         functions = [self.get_error_set, self.get_error_relational]
         start = eval(quantifier.start.replace("\\", "\\\\"))
         end = eval(quantifier.end.replace("\\", "\\\\"))
@@ -222,11 +234,11 @@ class GeneticAlgorithm:
         errors = list()
         for i in range(start, end):
             errors_ = list()
-            element = str(i) if quantifier.domtype in {self.DNUM, self.DINDS} else f"{quantifier.domain}[{i}]"
+            element = str(i) if quantifier.domaint in {self.DNUM, self.DINDS} else f"{quantifier.domain}[{i}]"
             try:
                 for atom in quantifier.atoms:
-                    funcinds = self.SET if get_indexes(inset+'|'+notint, atom) else self.REL
-                    atom = replace_pattern(quantifier.iterv, element, atom)
+                    funcinds = self.SET if get_indexes(operatorobj.inset+'|'+operatorobj.notin, atom) else self.REL
+                    atom = replace_pattern(quantifier.itervar, element, atom)
                     error = functions[funcinds](atom)
                     errors_ += [error]
                 errors.append(sum(errors_) if quantifier.operator in {self.AND, self.NONE} else min(errors_))

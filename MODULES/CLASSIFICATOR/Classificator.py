@@ -2,6 +2,7 @@ from MODULES.regex_patterns2 import Quantifier, Operator, Function
 
 from MODULES.regex_functions import get_indexes
 
+import copy
 
 class Classificator:
     __slots__ = ('testconditions','defconditions')

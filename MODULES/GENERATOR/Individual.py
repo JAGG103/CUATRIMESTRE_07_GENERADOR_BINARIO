@@ -58,7 +58,7 @@ class Individual:
                 self.fenotype.append(elements.copy())
             else:
                 typee = self.types[i]
-                indexes = get_indexes(self.basics, typee)
+                indexes = get_indexes('|'.join(self.basics), typee)
                 if(indexes):
                     element = coding.generate_element(self.types[i], DISTANCE)
                     self.fenotype.append(element)

@@ -21,7 +21,7 @@ class Algorithm:
         condition_ = copy.deepcopy(condition)
         # Sustituir init en los predicados
         for key in condition_.keys():
-            condition_[key] = [Substitute().substitute_pattern_notinside(init, predicate) for predicate in condition_[key]]
+            condition_[key] = [Substitute().substitute_values_notin_evaluations(init, predicate) for predicate in condition_[key]]
 
         # Resolver asignaciones
         values,condition_['relational'] = Assignments().assignments(port['variables'],port['types'], condition_['relational'])

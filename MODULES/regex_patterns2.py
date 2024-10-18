@@ -61,8 +61,8 @@ class Delimiter:
     def __init__(self):
         self.disyuntos = r"(?<!')\((?!')"
         self.enddisyuntos = r"(?<!')\)(?!')"
-        self.arg = r"(?<!')\((?<!')"
-        self.endarg = r"(?<!')\)(?<!')"
+        self.arg = r"(?<!')\((?!')"
+        self.endarg = r"(?<!')\)(?!')"
 
 class Function:
     __slots__ = ('lenght')
@@ -82,9 +82,9 @@ class Quantifier:
 
         self.domain = r"(?<!')\[(?!')"
         self.enddomain = r"(?<!')\](?!')"
-        self.num = r"(?<!')\{(?<!')"
-        self.endnum = r"(?<!')\}(?<!')"
-        self.inds = rf'\binds\b\{Delimiter().arg}'
+        self.num = r"(?<!')\{(?!')"
+        self.endnum = r"(?<!')\}(?!')"
+        self.inds = rf'\binds\b{Delimiter().arg}'
         self.elems = rf"\belems\b{Delimiter().arg}"
         self.endie = rf"{Delimiter().endarg}"
         self.itervar = rf"(?<={self.domain})[\w\d]+(?={Specification().instdom})"

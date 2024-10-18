@@ -61,6 +61,8 @@ class Mutator:
     def extend_set_of_predicates(self, obj:list, piv:list, i:int, indexes:list[tuple], operatorA:str, operatorB:str)->dict[str,tuple]:
         mutantA = copy.deepcopy(obj)
         mutantB = copy.deepcopy(obj)
+        pivA = copy.deepcopy(piv)
+        pivB = copy.deepcopy(piv)
 
         elem = obj[i][:indexes[0][0]] + operatorA + obj[i][indexes[0][1]:]
         mutantA[i] = elem
@@ -68,5 +70,5 @@ class Mutator:
         elem = obj[i][:indexes[0][0]] + operatorB + obj[i][indexes[0][1]:]
         mutantB[i] = elem
 
-        mutants = {'mutant A':(mutantA,piv), 'mutant B':(mutantB,piv)}
+        mutants = {'mutant A':(mutantA,pivA), 'mutant B':(mutantB,pivB)}
         return mutants
