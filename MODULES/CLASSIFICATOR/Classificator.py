@@ -57,8 +57,10 @@ class Classificator:
                 mhlist = [get_indexes(pattern, predicate) for pattern in musthave]
 
                 if(get_indexes(f"{quantifier.forall}|{quantifier.exists}", predicate)):
-                    inds = get_indexes(quantifier.suchthat, predicate)
-                    predicate = predicate[inds[0][1]:]   
+                    inds = get_indexes(rf"{quantifier.domain}.*{quantifier.enddomain}", predicate)
+                    predicate = predicate[:inds[0][0]] + predicate[inds[0][1]:]
+                    #inds = get_indexes(quantifier.suchthat, predicate)
+                    #predicate = predicate[inds[0][1]:]   
 
                 nhlist = [get_indexes(pattern, predicate) for pattern in nothave]
                 if(None not in mhlist):

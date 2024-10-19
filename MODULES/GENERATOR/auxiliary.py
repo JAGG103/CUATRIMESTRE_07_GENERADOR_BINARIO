@@ -142,8 +142,8 @@ class Quantifiers:
         inds = get_indexes(quantifier.suchthat, atomic)
         # Contenido
         content = atomic[inds[0][1]:-1]
-        inds_and = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.evaluation], operator.and_, content)
-        inds_or = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.evaluation], operator.or_, content)
+        inds_and = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.endevaluation], operator.and_, content)
+        inds_or = indexes_avoiding_head_and_tail([quantifier.evaluation],[quantifier.endevaluation], operator.or_, content)
         if(inds_and):
             atoms, operator = get_elements_notin_indexes(inds_and, content), flags.AND
         elif(inds_or):

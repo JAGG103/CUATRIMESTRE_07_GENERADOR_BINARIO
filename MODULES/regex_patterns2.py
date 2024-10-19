@@ -42,12 +42,12 @@ class Operator:
         self.not_ = r'\b\s*not\s+\b' 
         self.inset = r'\s+inset\s+'
         self.notin = r'\s+notin\s+'
-        self.equality = r"(?<!')\s*=\s*(?!')"
+        self.equality = r"(?<!['<>])\s*=\s*(?!')"
         self.inequality = r"(?<!')\s*<>\s*(?<!')"
         self.le = r"(?<!')\s*<=\s*(?!')"
         self.ge = r"(?<!')\s*>=\s*(?!')"
-        self.less = r"(?<!')\s*<\s*(?!['>])"
-        self.greater = r"(?<!['<])\s*>\s*(?!')"
+        self.less = r"(?<!')\s*<\s*(?!['>=])"
+        self.greater = r"(?<!['<])\s*>\s*(?!['=])"
 
 class Mutation:
     __slots__ = ('less','equal','greater')
