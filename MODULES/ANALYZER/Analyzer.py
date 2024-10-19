@@ -175,13 +175,13 @@ class Analyzer:
                 indexeswr = get_indexes(specification.wr, element)
                 if(indexesrd!=None):
                     info = element[indexesrd[0][1]:]
-                    variable,typee = info.split(specification.separator)
+                    variable,typee = info.split(specification.instdom)
                     variable = '_'+variable
                     inport['variables'].append(variable)
                     inport['types'].append(typee)
                 elif(indexeswr!=None):
                     info = element[indexeswr[0][1]:]
-                    variable,typee = info.split(specification.separator)
+                    variable,typee = info.split(specification.instdom)
                     outport['variables'].append(variable)
                     outport['types'].append(typee)
                     variable = '_'+variable

@@ -30,8 +30,8 @@ class Specification:
         # Puertos
         self.instdom = ':'
         self.separator = ','
-        self.inport = rf"(?<=\()[\w\d{self.separator}{self.instdom}]+(?=\))"
-        self.outport = fr"(?<=\))[\w\d{self.separator}{self.instdom}]+"
+        self.inport = rf"(?<=\()[\w\d{self.separator}{self.instdom}\s]+(?=\))"
+        self.outport = fr"(?<=\))[\w\d{self.separator}{self.instdom}\s]+"
 
 class Operator:
     __slots__ = ('implies','and_','or_','not_','inset','notin','equality','inequality','le','ge','less','greater')

@@ -36,6 +36,17 @@ class EvaluationAlgorithm:
 
     def auxiliary_existential(self, quantifier:Quantifiers, init_:dict):
         # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
+        # El predicado a evaluar tiene la siguiente forma P = exists[i:D] | P1={ ... } <o> P2={ ... } <o> Pk={ Pk1 <> Pk2 <> ... <> Pkn} <o> ... <o> Pm={ ... };
+        # for Pk in {P1,P2,...,Pm}
+        #       for i in D
+        #           for Pr in Pk
+        #               Pr = substitute(i,Pr)
+        #               errors += [Error(Pr)]
+        #           errors_ += [sum(errors) if (<> in Pk) in {AND,NONE} else min(errors) ]
+        #       errors__ = min(errors_)
+        #       if errors__ is 0
+        #           cause_k
+        # No se utilizan los <o> inset {and,or}
         operatorobj = Operator()
         flags = Flags()
 
@@ -78,6 +89,16 @@ class EvaluationAlgorithm:
 
     def auxiliary_universal(self, quantifier:Quantifiers, init_:dict):
         # Función auxiliar que utiliza un objeto de la clase 'Quantifiers' para obtener información de este predicado, obtener las causas y efectos, para posteriormente evaluar
+        # El predicado a evaluar tiene la siguiente forma P = forall[i:D] | P1={ ... } <o> P2={ ... } <o> Pk={ Pk1 <> Pk2 <> ... <> Pkn} <o> ... <o> Pm={ ... };
+        # for i in D
+        #   for Pk in {P1,P2,...,Pm}
+        #       for Pr in Pk={ Pk1, Pk2, ... , Pkn}
+        #           Pr = substitute(i,Pr)
+        #           errors += [Error(Pr)]
+        #       error = sum(errors) if (<> in Pk) in {AND,NONE} else min(errors)
+        #       if error is 0:
+        #           cause_k
+        # No se utilzan los operadores <o> in {and,ors}
         operatorobj = Operator()
         flags = Flags()
 

@@ -16,7 +16,7 @@ class Classificator:
                     'existential generation':([quantifier.exists, quantifier.endquant], [quantifier.evaluation, quantifier.endevaluation]),
                     'universal evaluation':([quantifier.forall, quantifier.endquant,quantifier.evaluation, quantifier.endevaluation],[]),
                     'existential evaluation':([quantifier.exists, quantifier.endquant, quantifier.evaluation, quantifier.endevaluation],[]),
-                    'set':([operator.implies],[quantifier.forall,quantifier.exists]),
+                    'set':([f"{operator.inset}|{operator.notin}"],[quantifier.forall,quantifier.exists]),
                     'relational':([rf"{operator.le}|{operator.ge}|{operator.less}|{operator.greater}|{operator.equality}|{operator.inequality}"],[quantifier.forall, quantifier.exists, operator.or_, operator.implies])}
         
         self.testconditions, self.defconditions = self.main(testconditions, defconditions, patterns)
@@ -66,7 +66,5 @@ class Classificator:
                         atoms += [predicates.pop(i)]
                         cond = True
                         break
-                    else:
-                        raise ValueError(f"Existen elementos en el predicado que no pertenecen a tal: {predicates[i]}")
         return atoms
         
