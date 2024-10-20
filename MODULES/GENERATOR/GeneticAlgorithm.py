@@ -1,4 +1,3 @@
-#from MODULES.regex_patterns import Operator, Types, Set
 from MODULES.regex_patterns2 import Operator, Type
 
 from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern
@@ -13,7 +12,7 @@ class GeneticAlgorithm:
     __slots__ = ('N_WORDS','solution','solutiondict','DNUM','DELEM','DINDS','AND','OR','NONE','SET','REL')
     def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
         flags = Flags()
-        fxp = FixedPoint()
+        fxp = FixedPoint(parameters['distance'])
 
         self.DNUM = flags.DOMAINNUM
         self.DELEM = flags.DOMAINELEMS
@@ -77,7 +76,7 @@ class GeneticAlgorithm:
     def create_population(self, n_population:int, types:list, distance:int, lenghts:list):
         population = []
         for _ in range(n_population):
-            individual = Individual(types)
+            individual = Individual(types, distance)
             individual.create_progenitor(distance, lenghts)
             population.append(individual)
         return population

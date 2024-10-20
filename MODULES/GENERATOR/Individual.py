@@ -6,9 +6,9 @@ from MODULES.regex_functions import get_indexes
 
 class Individual:
     __slots__ = ('basics','nwords','fenotype','genotype','types')
-    def __init__(self, types:list) -> None:    
+    def __init__(self, types:list, distance:int) -> None:    
         type_ = Type()
-        fxp = FixedPoint()
+        fxp = FixedPoint(distance)
         # Patrones re de los tipos basicos
         self.basics = [type_.real, type_.int, type_.nat, type_.nat0, type_.char]
         # Se instancia una lista de valores enteros que corresponde al número de bits para cada tipo básico

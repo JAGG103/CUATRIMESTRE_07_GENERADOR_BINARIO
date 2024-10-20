@@ -26,20 +26,15 @@ class FixedPoint:
     # los valores que estos tipos de datos pueden tomar.
     # Para el tipo de dato REAL se deja un bit de signo, n bits para la parte entera y m bits para la parte fraccionaria.
     __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR','nwords')
-    def __init__(self):
-        num = 20
+    def __init__(self, num:int):
         aux = math.log(num,2)
         N_WORD = math.ceil(aux)
         N_WORD_MAX = 32
-        # if(aux%2 == 0):
-        #     N_WORD = aux
-        # else:
-        #     N_WORD = math.floor(aux)
 
-        self.N_WORD_INT = N_WORD + 1 # 13  # -4096 to 4096
-        self.N_WORD_REAL = N_WORD_MAX # 32 # -4096.00 to 4096.00
+        self.N_WORD_INT = N_WORD + 1
+        self.N_WORD_REAL = N_WORD_MAX 
         self.N_FRAC_REAL = self.N_WORD_REAL - self.N_WORD_INT
-        self.N_WORD_NAT = N_WORD # self.N_WORD_INT - 1  # 0 to 4096
+        self.N_WORD_NAT = N_WORD
         self.N_WORD_CHAR = 7  # 0 - 127
         self.nwords = [self.N_WORD_REAL, self.N_WORD_INT, self.N_WORD_NAT, self.N_WORD_NAT, self.N_WORD_CHAR] # [real, int, nat, nat0, char]
 
