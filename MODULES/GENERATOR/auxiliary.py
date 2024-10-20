@@ -42,8 +42,7 @@ class FixedPoint:
 class Coding:
     # Clase utilizada para códificación de las soluciones en la secuencia genética de los individuos
     __slots__ = ('N_WORD_REAL','N_FRAC_REAL','N_WORD_INT','N_WORD_NAT','N_WORD_CHAR')
-    def __init__(self):
-        fxp = FixedPoint()
+    def __init__(self, fxp:FixedPoint):
         self.N_WORD_REAL = fxp.N_FRAC_REAL
         self.N_FRAC_REAL = fxp.N_FRAC_REAL
         self.N_WORD_INT = fxp.N_WORD_INT

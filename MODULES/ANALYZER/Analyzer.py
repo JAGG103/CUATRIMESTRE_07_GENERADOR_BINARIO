@@ -3,9 +3,10 @@ from MODULES.regex_functions import get_indexes_blocks, split_with_pattern, get_
 from MODULES.regex_patterns2 import Block, Operator, Specification, Quantifier, Delimiter
 
 class Analyzer:
-    __slots__ = ('init', 'inport','inaux','outport','outaux','prels', 'testconditions','defconditions')
+    __slots__ = ('name','init', 'inport','inaux','outport','outaux','prels', 'testconditions','defconditions')
 
     def __init__(self, specification:str):
+        self.name = str()
         self.init = {}
         self.inport = {}
         self.inaux = {}
@@ -55,6 +56,7 @@ class Analyzer:
             if(len(line)==0):
                 continue
             elif(get_indexes(specification.process, line)!=None):
+                self.name = self.get_process_name(line)
                 self.inport, self.outport = self.get_ports(line)
             elif(get_indexes(specification.aux,line)!=None):
                 self.inaux, self.outaux = self.get_ports(line)
@@ -125,6 +127,13 @@ class Analyzer:
             indexes = next(indexesgen)
             postls[i] = get_elements_notin_indexes(indexes, postls[i])
         return postls
+
+    def get_process_name(self, line:str) -> str:
+        specification = Specification()
+        processinds = get_indexes(specification.process, line)
+        startport = get_indexes(specification.startport, line)
+        name = line[processinds[0][1]:startport[0][0]]
+        return name
 
 
     def get_ports(self, line:str)->tuple[dict]:

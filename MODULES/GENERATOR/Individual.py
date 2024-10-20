@@ -5,21 +5,22 @@ from MODULES.regex_patterns2 import Type
 from MODULES.regex_functions import get_indexes
 
 class Individual:
-    __slots__ = ('basics','nwords','fenotype','genotype','types')
+    __slots__ = ('basics','nwords','fenotype','genotype','types','fxp')
     def __init__(self, types:list, distance:int) -> None:    
         type_ = Type()
-        fxp = FixedPoint(distance)
+
+        self.fxp = FixedPoint(distance)
         # Patrones re de los tipos basicos
         self.basics = [type_.real, type_.int, type_.nat, type_.nat0, type_.char]
         # Se instancia una lista de valores enteros que corresponde al número de bits para cada tipo básico
-        self.nwords = fxp.nwords
+        self.nwords = self.fxp.nwords
         self.fenotype = []
         self.genotype = []
         self.types = types
 
     # Función que permite crear un individuo a partir de su secuencia genética códificada (Binario)
     def create_offspring(self, genotypeseq, lenghts):
-        coding = Coding()
+        coding = Coding(self.fxp)
         type_ = Type()
 
         self.fenotype = []
@@ -46,7 +47,7 @@ class Individual:
 
     # Función que permite crear un individuo progenitor, generando sus genes de forma aleatoria utilizando sus tipos
     def create_progenitor(self, DISTANCE:int, lenghts:list[int])->list:
-        coding = Coding()
+        coding = Coding(self.fxp)
         type_ = Type()
         
         chromosome = []

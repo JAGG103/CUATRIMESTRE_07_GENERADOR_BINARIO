@@ -15,7 +15,7 @@ class Block:
         self.endprocess = r"\bend_process\b"
 
 class Specification:
-    __slots__ = ('process','end_process','aux','ext','pre','post', 'wr','rd','instdom','separator','inport','outport')
+    __slots__ = ('process','end_process','aux','ext','pre','post', 'wr','rd','instdom','separator','inport','outport','startport','endport')
     def __init__(self):
         # Inicios de linea
         self.process = rf"{Block().process}\s*"
@@ -30,8 +30,10 @@ class Specification:
         # Puertos
         self.instdom = ':'
         self.separator = ','
-        self.inport = rf"(?<=\()[\w\d{self.separator}{self.instdom}\s]+(?=\))"
-        self.outport = fr"(?<=\))[\w\d{self.separator}{self.instdom}\s]+"
+        self.startport = r"\("
+        self.endport = r"\)"
+        self.inport = rf"(?<={self.startport})[\w\d{self.separator}{self.instdom}\s]+(?={self.endport})"
+        self.outport = fr"(?<={self.endport})[\w\d{self.separator}{self.instdom}\s]+"
 
 class Operator:
     __slots__ = ('implies','and_','or_','not_','inset','notin','equality','inequality','le','ge','less','greater')
