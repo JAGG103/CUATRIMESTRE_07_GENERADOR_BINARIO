@@ -38,7 +38,7 @@ class GeneticAlgorithm:
         population = self.create_population(parameters['n_population'], types, parameters['distance'], lenghts)
         while(generation < parameters['generations']):
             
-            parameters['m_probability'] = 0.2 if generation >= 0.6*parameters['generations'] else parameters['m_probability']
+            #parameters['m_probability'] = 0.2 if generation >= 0.6*parameters['generations'] else parameters['m_probability']
 
             fitnessvector,indbest = self.get_fitness_vector(population,condition,variables)
 
