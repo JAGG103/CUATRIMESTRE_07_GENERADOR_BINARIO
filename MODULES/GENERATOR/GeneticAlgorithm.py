@@ -107,8 +107,17 @@ class GeneticAlgorithm:
             population[i].create_offspring(offspringGenotypes[i], lenghts)
 
     def selection(self, population:list, probability:list)->tuple[int,int]:
-        indsprogenitor = np.random.choice(len(population), 2, p=probability)
-        return indsprogenitor
+        #indsprogenitor = np.random.choice(len(population), 2, p=probability)
+        
+        l = len(population)
+        first = np.random.choice(l, p = probability)
+
+        prob = probability[first]
+        prob = prob/(l-1)
+        probability_copy = [probability[i]+prob if i!=first else 0.0 for i in range(len(probability))]
+        second = np.random.choice(l, p=probability_copy)
+
+        return (first, second)
 
 
     def get_fitness_vector(self, population:list[Individual], group:dict, variables:list):
