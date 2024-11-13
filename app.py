@@ -1,7 +1,9 @@
+# Módulos de nuestra metodología de generación de casos de prueba
 from MODULES.ANALYZER.Analyzer import Analyzer
 from MODULES.MUTATOR.Mutator import Mutator
 from MODULES.CLASSIFICATOR.Classificator import Classificator
 from MODULES.GENERATOR.Generator import Generator
+#-----------------------------------------------------------------
 import streamlit as st
 import re
 import json
