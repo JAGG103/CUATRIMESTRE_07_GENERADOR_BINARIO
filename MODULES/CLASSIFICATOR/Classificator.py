@@ -1,59 +1,72 @@
-from MODULES.regex_patterns import Universal, Existential, Operator, Blocks, Set, Functions
+from MODULES.regex_patterns2 import Quantifier, Operator, Function
+
 from MODULES.regex_functions import get_indexes
 
+import copy
+
 class Classificator:
-    __slots__ = ('testConditions','defConditions','_and_')
-    def __init__(self, testConditions:list, defConditions:list):
-        self._and_ = ' and '
-        check = [Blocks('quantifiers')._forall, Blocks('quantifiers')._exists]
-        check += [Operator('logic').or_, Operator('logic').implies_]
-        patterns = [Universal('numeric').generation, Existential('numeric').generation, Universal('elems').generation, Universal('inds').generation]
-        patterns += [Universal('numeric').evaluation, Universal('elems').evaluation, Universal('inds').evaluation]
-        patterns += [Set('in').in_+'|'+ Set('not').not_]
-        patterns += [Functions('len').len]
-        names = ['universal numeric generation', 'existential numeric generation', 'universal elems generation', 'universal inds generation']
-        names += ['universal numeric evaluation', 'universal elems evaluation', 'universal inds evaluation']
-        names += ['set']
-        names += ['func len']
-        names += ['relational']
-        self.testConditions, self.defConditions = self.main(testConditions, defConditions, patterns, check, names)
+    __slots__ = ('testconditions','defconditions')
+    def __init__(self, testconditions:list, defconditions:list):
+        quantifier = Quantifier()
+        operator = Operator()
+        function = Function()
+
+        patterns = {'function len':([function.lenght, operator.equality],[quantifier.forall,quantifier.exists]),
+                    'universal generation':([quantifier.forall, quantifier.endquant], [quantifier.evaluation, quantifier.endevaluation]),
+                    'existential generation':([quantifier.exists, quantifier.endquant], [quantifier.evaluation, quantifier.endevaluation]),
+                    'universal evaluation':([quantifier.forall, quantifier.endquant,quantifier.evaluation, quantifier.endevaluation],[]),
+                    'existential evaluation':([quantifier.exists, quantifier.endquant, quantifier.evaluation, quantifier.endevaluation],[]),
+                    'set':([f"{operator.inset}|{operator.notin}"],[quantifier.forall,quantifier.exists]),
+                    'relational':([rf"{operator.le}|{operator.ge}|{operator.less}|{operator.greater}|{operator.equality}|{operator.inequality}"],[quantifier.forall, quantifier.exists, operator.or_, operator.implies])}
+        
+        self.testconditions, self.defconditions = self.main(testconditions, defconditions, patterns)
     
-    def main(self, testConditions:list, defConditions:list, patterns:list, check:list, names:list):
-        testConditionsG = []
-        defConditionsG = []
-        for testc,defc in iter(zip(testConditions, defConditions)):
-            groups = self.groupping(testc, patterns, check, names)
-            testConditionsG.append(groups)
-            groups = self.groupping(defc, patterns, check, names)
-            defConditionsG.append(groups)
-        return testConditionsG, defConditionsG
+
+    def main(self, testconditions:list, defconditions:list, patterns:dict[str,tuple]):
+        testconditionsG = []
+        defconditionsG = []
+        for testc,defc in iter(zip(testconditions, defconditions)):
+            groups = self.groupping(testc, patterns)
+            testconditionsG.append(groups)
+            groups = self.groupping(defc, patterns)
+            defconditionsG.append(groups)
+        return testconditionsG, defconditionsG
 
 
-    def groupping(self, condition:list, patterns:list, check:list, names:list) -> dict:
+    def groupping(self, predicates:list, patterns:dict[str,tuple]) -> dict:
         groups = dict()
-        elements = []
-        for pattern in patterns:
-            element = self.create_group(pattern, condition)
-            elements.append(element)
-        pattern = "|".join(check)
-        for atom in condition:
-            if(get_indexes(pattern, atom)!=None):
-                raise ValueError(f"Error en agrupador {atom}")
-        elements.append(condition.copy())
-        for i in range(len(names)):
-            groups[names[i]] = elements[i]
+
+        for name in patterns.keys():
+            element = self.musthave_nothave(patterns[name][0], patterns[name][1], predicates)
+            groups[name] = element
+
+        if(len(predicates)!=0):
+            raise ValueError(f"Error en agrupador, no se lograron agrupar los siguientes predicados: {predicates}")
+        
         return groups
     
 
-    def create_group(self, pattern:str, condition: list[str]) -> list:
-        atoms = []
-        out = True
-        while(out):
-            out = False
-            for i in range(len(condition)):
-                indexes = get_indexes(pattern, condition[i])
-                if(indexes):
-                    atoms += [condition.pop(i)]
-                    out = True
-                    break
+    def musthave_nothave(self, musthave:list[str], nothave:list[str], predicates:list[str]):
+        quantifier = Quantifier()
+        atoms = list()
+        cond = True
+        while(cond):
+            cond = False
+            for i in range(len(predicates)):
+                predicate = predicates[i]
+                mhlist = [get_indexes(pattern, predicate) for pattern in musthave]
+
+                if(get_indexes(f"{quantifier.forall}|{quantifier.exists}", predicate)):
+                    inds = get_indexes(rf"{quantifier.domain}.*{quantifier.enddomain}", predicate)
+                    predicate = predicate[:inds[0][0]] + predicate[inds[0][1]:]
+                    #inds = get_indexes(quantifier.suchthat, predicate)
+                    #predicate = predicate[inds[0][1]:]   
+
+                nhlist = [get_indexes(pattern, predicate) for pattern in nothave]
+                if(None not in mhlist):
+                    if(len(nhlist)==nhlist.count(None)):
+                        atoms += [predicates.pop(i)]
+                        cond = True
+                        break
         return atoms
+        

@@ -1,39 +1,49 @@
-from MODULES.regex_patterns import Operator, Types
-from MODULES.regex_functions import get_indexes,split_with_pattern
+from MODULES.regex_patterns2 import Operator, Type
+
+from MODULES.regex_functions import get_indexes, split_with_pattern, replace_pattern
 from MODULES.GENERATOR.Individual import Individual
-from MODULES.GENERATOR.auxiliary import Evaluate
+from MODULES.GENERATOR.auxiliary import Evaluate, Substitute, Quantifiers, FixedPoint, Flags
 from MODULES.GENERATOR.Exceptions import UnoptimalIndividual
 
 import numpy as np
 from copy import deepcopy
 
 class GeneticAlgorithm:
-    __slots__ = ('N_WORDS','solution','values')
-    def __init__(self, parameters:dict, variables:list, types:list ,condition:dict, values:dict):
-        self.N_WORDS = {'real':32,'int':13,'nat':12,'char':7}
-        self.solution = self.generate(parameters, variables, types, condition, values)
-        self.values = {i:round(j,5) for i,j in zip(variables, self.solution)}
-        print(self.values)
+    __slots__ = ('N_WORDS','solution','solutiondict','DNUM','DELEM','DINDS','AND','OR','NONE','SET','REL')
+    def __init__(self, parameters:dict, variables:list, types:list ,condition:dict):
+        flags = Flags()
+        fxp = FixedPoint(parameters['distance'])
 
-    def generate(self, parameters:dict, variables:list, types:list, condition:dict, values:dict):
+        self.DNUM = flags.DOMAINNUM
+        self.DELEM = flags.DOMAINELEMS
+        self.DINDS = flags.DOMAININDS
+        self.AND = flags.AND
+        self.OR =  flags.OR
+        self.NONE = flags.NONE
+        self.SET = flags.SET
+        self.REL = flags.REL
+
+        self.N_WORDS = {'real':fxp.N_WORD_REAL,'int':fxp.N_WORD_INT,'nat':fxp.N_WORD_NAT, 'nat0':fxp.N_WORD_NAT, 'char':fxp.N_WORD_CHAR}
+        self.solution = self.generate(parameters, variables, types, condition)
+        self.solutiondict = {i:j for i,j in zip(variables, self.solution)}
+
+    def generate(self, parameters:dict, variables:list, types:list, condition:dict):
         # parameters.keys() in {'n_population','m_probability', 'generations', 'distance'}
         bestindividual = None
         solved = False
         generation = 0
 
-        for key in condition.keys():
-            for i in range(len(condition[key])):
-                condition[key][i] = Evaluate().substitute_dict(values, condition[key][i]) 
-
-        lenghts = self.get_lenghts(types, variables, condition['func len'])
+        lenghts = self.get_lenghts(types, variables, condition['function len'])
         genotypelenght = self.get_chrosome_lenght(types, lenghts)
         population = self.create_population(parameters['n_population'], types, parameters['distance'], lenghts)
         while(generation < parameters['generations']):
+            
+            #parameters['m_probability'] = 0.2 if generation >= 0.6*parameters['generations'] else parameters['m_probability']
 
             fitnessvector,indbest = self.get_fitness_vector(population,condition,variables)
 
             bestindividual = deepcopy(population[indbest])
-            #print(f"{generation} : {bestindividual.fenotype} : {fitnessvector[indbest]}")
+            print(f"{generation} : {bestindividual.fenotype} : {fitnessvector[indbest]}")
             
             if(fitnessvector[indbest] == 1):
                 solved = True
@@ -57,7 +67,7 @@ class GeneticAlgorithm:
         if(solved):
             return bestindividual.fenotype
         else:
-            raise UnoptimalIndividual("")
+            raise UnoptimalIndividual("No se encontraron soluciones")
 
 
 
@@ -66,7 +76,7 @@ class GeneticAlgorithm:
     def create_population(self, n_population:int, types:list, distance:int, lenghts:list):
         population = []
         for _ in range(n_population):
-            individual = Individual(types)
+            individual = Individual(types, distance)
             individual.create_progenitor(distance, lenghts)
             population.append(individual)
         return population
@@ -97,8 +107,17 @@ class GeneticAlgorithm:
             population[i].create_offspring(offspringGenotypes[i], lenghts)
 
     def selection(self, population:list, probability:list)->tuple[int,int]:
-        indsprogenitor = np.random.choice(len(population), 2, p=probability)
-        return indsprogenitor
+        #indsprogenitor = np.random.choice(len(population), 2, p=probability)
+        
+        l = len(population)
+        first = np.random.choice(l, p = probability)
+
+        prob = probability[first]
+        prob = prob/(l-1)
+        probability_copy = [probability[i]+prob if i!=first else 0.0 for i in range(len(probability))]
+        second = np.random.choice(l, p=probability_copy)
+
+        return (first, second)
 
 
     def get_fitness_vector(self, population:list[Individual], group:dict, variables:list):
@@ -122,10 +141,10 @@ class GeneticAlgorithm:
         return stochasticVector
 
     def get_chrosome_lenght(self, types:list, lenghts:list):
+        typeobj = Type()
         counter = 0
-        pattern = Types().seqof
         for i in range(len(types)):
-            indexes = get_indexes(pattern, types[i])
+            indexes = get_indexes(typeobj.seqof, types[i])
             if(indexes):
                 typee = types[i][indexes[0][1]:]
             else:
@@ -137,57 +156,65 @@ class GeneticAlgorithm:
 
     # Calculo de los errores
 
-    def get_error_relational(self, atomicp:str, error:float):
+    def get_error_relational(self, atomicp:str):
         # Método que sustituye en el predicado atómico relacional con la posible solución (presente en el fenotipo) y calcula su error 
-        op = Operator('relational')
-        pattern = rf"{op.less_}|{op.greater_}|{op.equality_}"
+        opobj = Operator()
+        pattern = rf"{opobj.less}|{opobj.greater}|{opobj.equality}|{opobj.le}|{opobj.ge}|{opobj.inequality}"
         indexes = get_indexes(pattern, atomicp)
         operator = atomicp[indexes[0][0]:indexes[0][1]]
         left, right = split_with_pattern(pattern, atomicp)
-        error += Evaluate().relational(left, right, operator)
+        error = Evaluate().relational(left, right, operator)
         return error
 
-    def get_error_set(self, atomicp:str, error:float):
-        op = Operator('set')
-        pattern = rf"{op.inset_}|{op.notin_}"
+    def get_error_set(self, atomicp:str):
+        opobj = Operator()
+        pattern = rf"{opobj.inset}|{opobj.notin}"
         indexes = get_indexes(pattern, atomicp)
         operator = atomicp[indexes[0][0]:indexes[0][1]]
         left, right = split_with_pattern(pattern, atomicp)
-        error += Evaluate().set(left, right, operator)
+        error = Evaluate().set(left, right, operator)
         return error
 
-    def get_error_universal_numeric(self, atomic:str, error:float):
-        # forall[i:{A...B}] | P() <o> P() <o> ... <o> P().
-        # forall[i:{A...B}] | {P() <o> P() <o> ... P() implies Q() <o> Q() <o> ... <o> Q()} or {}
- 
-        pass
+    def get_error_universal(self, atomic:str):
+        # forall[ domain ] | P() <o> P() <o> ... <o> P();
+        flags = Flags()
+        universal = Quantifiers(atomic)
 
-    def get_error_existential_numeric(self):
-        pass
+        errors = self.auxiliary_quantifier_error(universal)
+        error = sum(errors) if universal.operator in {flags.AND, flags.NONE} else max(errors)
+        return error
+            
+    def get_error_existential(self, atomic:str):
+        # exists[ domain ] | P() <o> P() <o> ... <o> P().
+        operatorobj = Operator()
+        existential = Quantifiers(atomic)
 
-    def get_error_universal_elems(self):
-        pass
+        errors = self.auxiliary_quantifier_error(existential)
+        error = min(errors)
+        # Considera si existe una negación delante operador
+        if(get_indexes(operatorobj.not_, atomic)):
+            error = 0.0 if error>0.0 else 100
+        return error
 
-    def get_error_universal_inds(self):
-        pass
 
     def error_function(self, groups:dict, variables:list, fenotype:list):
-        names = ['relational','set']
-        functions = [self.get_error_relational, self.get_error_set]
+        names = ['relational','set', 'universal generation','existential generation']
+        functions = [self.get_error_relational, self.get_error_set, self.get_error_universal, self.get_error_existential]
         error = 0.0
         for i in range(len(names)):
             for atomicp in groups[names[i]]:
-                atomicp = Evaluate().substitute_values(atomicp, variables, fenotype)
-                error += functions[i](atomicp, error)
+                atomicp = Substitute().substitute_values(atomicp, variables, fenotype)
+                error += functions[i](atomicp)
         return error
 
     # Crear vector de longitudes
     def get_lenghts(self, types:list, variables:list, groupfunc:list)->list:
-        equality = Operator('relational').equality_
-        seqof = Types().seqof
+        operatorobj = Operator()
+        typeobj = Type()
+
         lenghts = []
         for i in range(len(types)):
-            indexes = get_indexes(seqof, types[i])
+            indexes = get_indexes(typeobj.seqof, types[i])
             if(indexes==None):
                 lenghts.append(1)
             else:
@@ -195,14 +222,38 @@ class GeneticAlgorithm:
                 for func in groupfunc:
                     indexes = get_indexes(pattern,func)
                     if(indexes):
-                        indexes = get_indexes(equality, func)
+                        indexes = get_indexes(operatorobj.equality, func)
                         lenght = int(func[indexes[0][1]:])
                         lenghts.append(lenght)
                         break
-                    else:
-                        raise ValueError("No es una asignación")
         return lenghts
                         
-            
+    def auxiliary_quantifier_error(self,quantifier:Quantifiers)->list:
+        operatorobj = Operator()
+
+        functions = [self.get_error_set, self.get_error_relational]
+        start = eval(quantifier.start.replace("\\", "\\\\"))
+        end = eval(quantifier.end.replace("\\", "\\\\"))
+        
+        diff = end-start
+        if(diff == 0):
+            return [10]
+        elif(diff < 0):
+            return [10*abs(diff)]
+
+        errors = list()
+        for i in range(start, end):
+            errors_ = list()
+            element = str(i) if quantifier.domaint in {self.DNUM, self.DINDS} else f"{quantifier.domain}[{i}]"
+            try:
+                for atom in quantifier.atoms:
+                    funcinds = self.SET if get_indexes(operatorobj.inset+'|'+operatorobj.notin, atom) else self.REL
+                    atom = replace_pattern(quantifier.itervar, element, atom)
+                    error = functions[funcinds](atom)
+                    errors_ += [error]
+                errors.append(sum(errors_) if quantifier.operator in {self.AND, self.NONE} else min(errors_))
+            except IndexError:
+                pass
+        return errors
 
 
